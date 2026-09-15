@@ -269,11 +269,13 @@ DROP POLICY IF EXISTS profiles_select_authenticated ON public.profiles;
 DROP POLICY IF EXISTS profiles_update_own ON public.profiles;
 DROP POLICY IF EXISTS profiles_insert_own ON public.profiles;
 
+DROP POLICY IF EXISTS profiles_select_self_or_admin ON public.profiles;
 CREATE POLICY profiles_select_self_or_admin
   ON public.profiles
   FOR SELECT TO authenticated
   USING (id = auth.uid() OR private.has_operation('gerenciar_papeis'));
 
+DROP POLICY IF EXISTS profiles_update_name ON public.profiles;
 CREATE POLICY profiles_update_name
   ON public.profiles
   FOR UPDATE TO authenticated
