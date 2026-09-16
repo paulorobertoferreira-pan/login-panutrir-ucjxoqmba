@@ -18,22 +18,22 @@
 
 ## Casos inválidos
 
-| Caso  | Arquivo/entrada                           | Motivo da rejeição                 | Resultado esperado                 |
-| ----- | ----------------------------------------- | ---------------------------------- | ---------------------------------- | ------------------------ |
-| I-001 | `vendas_coluna_obrigatoria_ausente.csv`   | Falta `produto_codigo`             | Rejeitar antes do staging          |
-| I-002 | `vendas_formula_perigosa.csv`             | Campo textual começa por `=`       | Rejeitar e registrar motivo        |
-| I-003 | `vendas_vazia.csv`                        | Conteúdo vazio                     | Rejeitar sem inferência silenciosa |
-| I-004 | `vendas_quantidade_negativa.csv`          | `quantidade` abaixo do mínimo      | Rejeitar e manter estado anterior  |
-| I-005 | `metas_tipo_invalido.csv`                 | `meta_valor` não é decimal         | Rejeitar por tipo                  |
-| I-006 | `produtos_formula_perigosa.csv`           | `produto_nome` começa por `=`      | Rejeitar e registrar motivo        |
-| I-007 | `produtos_vigencia_invertida.csv`         | Fim da vigência anterior ao início | Rejeitar por regra entre campos    |
-| I-008 | `estrutura_chave_duplicada.csv`           | `estrutura_id` repetido            | Rejeitar duplicidade crítica       |
-| I-009 | `estrutura_delimitador_nao_suportado.csv` | Usa `                              | `, não `,`nem`;`                   | Rejeitar por delimitador |
-| I-010 | Nome `../vendas.csv`                      | Tentativa de path traversal        | Rejeitar pelo nome, antes de ler   |
-| I-011 | Nome `vendas.txt`                         | Extensão diferente de `.csv`       | Rejeitar pelo nome                 |
-| I-012 | Conteúdo com bytes fora de UTF-8          | Encoding inválido                  | Rejeitar antes do schema           |
-| I-013 | Arquivo maior que 1 MiB                   | Limite de tamanho excedido         | Rejeitar sem alterar staging       |
-| I-014 | Interrupção durante gravação              | Falha transacional simulada        | Fazer rollback e preservar staging |
+| Caso  | Arquivo/entrada                           | Motivo da rejeição                                           | Resultado esperado                 |
+| ----- | ----------------------------------------- | ------------------------------------------------------------ | ---------------------------------- |
+| I-001 | `vendas_coluna_obrigatoria_ausente.csv`   | Falta `produto_codigo`                                       | Rejeitar antes do staging          |
+| I-002 | `vendas_formula_perigosa.csv`             | Campo textual começa por `=`                                 | Rejeitar e registrar motivo        |
+| I-003 | `vendas_vazia.csv`                        | Conteúdo vazio                                               | Rejeitar sem inferência silenciosa |
+| I-004 | `vendas_quantidade_negativa.csv`          | `quantidade` abaixo do mínimo                                | Rejeitar e manter estado anterior  |
+| I-005 | `metas_tipo_invalido.csv`                 | `meta_valor` não é decimal                                   | Rejeitar por tipo                  |
+| I-006 | `produtos_formula_perigosa.csv`           | `produto_nome` começa por `=`                                | Rejeitar e registrar motivo        |
+| I-007 | `produtos_vigencia_invertida.csv`         | Fim da vigência anterior ao início                           | Rejeitar por regra entre campos    |
+| I-008 | `estrutura_chave_duplicada.csv`           | `estrutura_id` repetido                                      | Rejeitar duplicidade crítica       |
+| I-009 | `estrutura_delimitador_nao_suportado.csv` | Usa o caractere barra vertical, que não é delimitador aceito | Rejeitar por delimitador           |
+| I-010 | Nome `../vendas.csv`                      | Tentativa de path traversal                                  | Rejeitar pelo nome, antes de ler   |
+| I-011 | Nome `vendas.txt`                         | Extensão diferente de `.csv`                                 | Rejeitar pelo nome                 |
+| I-012 | Conteúdo com bytes fora de UTF-8          | Encoding inválido                                            | Rejeitar antes do schema           |
+| I-013 | Arquivo maior que 1 MiB                   | Limite de tamanho excedido                                   | Rejeitar sem alterar staging       |
+| I-014 | Interrupção durante gravação              | Falha transacional simulada                                  | Fazer rollback e preservar staging |
 
 ## Mapa contrato → cobertura
 
@@ -44,6 +44,8 @@
 | `produtos`            |       1 |         2 | código, linha, unidade, ativo e vigência                                   |
 | `estrutura_comercial` |       2 |         2 | supervisor, promotor, região e vigência                                    |
 
-## Limite desta task
+## Baseline RED e resultado da T2.1
 
-Este relatório descreve o resultado esperado dos casos. O parser, cálculo de SHA-256, upload, staging transacional, idempotência e rollback serão executados nas tasks T2.2 e T2.3. A T2.1 não grava nenhum CSV no banco.
+- **RED antes da entrega:** o projeto não possuía contratos, catálogo de schemas nem fixtures CSV versionadas; não havia como provar o formato ou os casos inválidos.
+- **Resultado após a entrega:** quatro contratos, catálogo versionado, seis fixtures válidas e quatorze casos inválidos/limítrofes foram criados e ligados por relatório.
+- **Limite:** o parser, cálculo de SHA-256, upload, staging transacional, idempotência e rollback serão executados nas tasks T2.2 e T2.3. A T2.1 não grava nenhum CSV no banco.
