@@ -5,6 +5,7 @@ import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import Index from './pages/Index'
 import Dashboard from './pages/Dashboard'
+import PermissionTest from './pages/PermissionTest'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import { AuthProvider } from '@/hooks/use-auth'
@@ -22,6 +23,7 @@ const App = () => (
           <Route element={<Layout />}>
             <Route path="/" element={<Index />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/permission-test" element={<PermissionTest />} />
             {/* ADD ALL CUSTOM ROUTES MUST BE ADDED HERE */}
           </Route>
           <Route path="*" element={<NotFound />} />

@@ -108,9 +108,18 @@ export default function Dashboard() {
                 Módulo em construção — a autenticação foi concluída com sucesso.
               </p>
             </div>
-            <span className="self-start sm:self-center px-3 py-1 rounded-full bg-[#D99A2B]/15 text-[#D99A2B] text-xs font-semibold uppercase tracking-wider">
-              Em Construção
-            </span>
+            <div className="flex flex-col items-start sm:items-end gap-2">
+              <span className="self-start sm:self-center px-3 py-1 rounded-full bg-[#D99A2B]/15 text-[#D99A2B] text-xs font-semibold uppercase tracking-wider">
+                Em Construção
+              </span>
+              <button
+                onClick={() => navigate('/permission-test')}
+                className="inline-flex items-center gap-2 rounded-lg bg-[#D99A2B] px-3 py-2 text-xs font-semibold text-white hover:bg-[#BF841F] transition-colors"
+              >
+                <Shield className="w-3.5 h-3.5" />
+                Testar permissões
+              </button>
+            </div>
           </div>
 
           {/* Grid de Cards Resumo para pré-visualização */}
