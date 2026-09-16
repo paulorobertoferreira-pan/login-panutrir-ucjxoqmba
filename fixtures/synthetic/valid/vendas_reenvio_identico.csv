@@ -1,0 +1,4 @@
+venda_id,data_venda,cliente_codigo,produto_codigo,quantidade,valor_venda,supervisor_codigo,promotor_codigo,regiao_codigo
+VEN-0001,2026-01-05,CLI-001,PROD-001,10,125.50,SUP-001,PROM-001,REG-01
+VEN-0002,2026-01-06,CLI-002,PROD-002,4,80.00,SUP-001,PROM-002,REG-01
+VEN-0003,2026-01-07,CLI-001,PROD-003,8,216.75,SUP-002,PROM-003,REG-02

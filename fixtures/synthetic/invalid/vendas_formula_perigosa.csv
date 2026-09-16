@@ -1,0 +1,2 @@
+venda_id,data_venda,cliente_codigo,produto_codigo,quantidade,valor_venda,supervisor_codigo,promotor_codigo,regiao_codigo
+VEN-9002,2026-01-05,=FORMULA-001,PROD-001,10,125.50,SUP-001,PROM-001,REG-01

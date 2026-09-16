@@ -1,0 +1,4 @@
+estrutura_id;supervisor_codigo;supervisor_nome;promotor_codigo;promotor_nome;regiao_codigo;regiao_nome;vigencia_inicio;vigencia_fim
+EST-0001;SUP-001;Supervisor Sintético 01;PROM-001;Promotor Sintético 01;REG-01;Região Sintética 01;2026-01-01;
+EST-0002;SUP-001;Supervisor Sintético 01;PROM-002;Promotor Sintético 02;REG-01;Região Sintética 01;2026-01-01;
+EST-0003;SUP-002;Supervisor Sintético 02;PROM-003;Promotor Sintético 03;REG-02;Região Sintética 02;2026-01-01;2026-06-30

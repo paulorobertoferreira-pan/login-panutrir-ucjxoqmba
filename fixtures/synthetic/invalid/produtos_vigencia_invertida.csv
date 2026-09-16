@@ -1,0 +1,2 @@
+produto_codigo,produto_nome,linha_codigo,unidade_medida,ativo,vigencia_inicio,vigencia_fim
+PROD-902,Produto Sintético 02,LIN-01,UN,true,2026-12-31,2026-01-01

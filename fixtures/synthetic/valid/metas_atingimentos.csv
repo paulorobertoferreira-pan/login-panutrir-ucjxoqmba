@@ -1,0 +1,4 @@
+registro_id,ciclo_referencia,cliente_codigo,produto_codigo,supervisor_codigo,promotor_codigo,meta_valor,atingimento_valor
+MAT-0001,2026-01,CLI-001,PROD-001,SUP-001,PROM-001,150.00,142.50
+MAT-0002,2026-01,CLI-002,PROD-002,SUP-001,PROM-002,100.00,108.00
+MAT-0003,2026-01,CLI-001,PROD-003,SUP-002,PROM-003,250.00,216.75

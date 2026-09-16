@@ -1,0 +1,103 @@
+{
+  "contract_id": "panutrir.fase1.vendas",
+  "version": "1.0.0",
+  "status": "fixture_sintetica",
+  "description": "Fatos sintéticos de venda, preservando período, cliente, produto, supervisor, promotor e região.",
+  "primary_key": ["venda_id"],
+  "file_rules": {
+    "extension": ".csv",
+    "encoding": "UTF-8",
+    "delimiters": [",", ";"],
+    "max_bytes": 1048576,
+    "max_data_rows": 10000,
+    "max_columns": 20,
+    "header_required": true
+  },
+  "cross_field_rules": [
+    "data_venda deve ser uma data ISO válida.",
+    "quantidade e valor_venda não podem ser negativos.",
+    "códigos devem obedecer aos padrões definidos e não podem ser vazios."
+  ],
+  "columns": [
+    {
+      "name": "venda_id",
+      "type": "string",
+      "required": true,
+      "max_length": 8,
+      "pattern": "^VEN-[0-9]{4}$",
+      "description": "Identificador sintético único da venda."
+    },
+    {
+      "name": "data_venda",
+      "type": "date",
+      "required": true,
+      "format": "YYYY-MM-DD",
+      "description": "Data sintética do fato de venda."
+    },
+    {
+      "name": "cliente_codigo",
+      "type": "string",
+      "required": true,
+      "max_length": 7,
+      "pattern": "^CLI-[0-9]{3}$",
+      "description": "Código sintético do cliente."
+    },
+    {
+      "name": "produto_codigo",
+      "type": "string",
+      "required": true,
+      "max_length": 8,
+      "pattern": "^PROD-[0-9]{3}$",
+      "description": "Código sintético do produto."
+    },
+    {
+      "name": "quantidade",
+      "type": "integer",
+      "required": true,
+      "min": 1,
+      "max": 100000,
+      "description": "Quantidade vendida."
+    },
+    {
+      "name": "valor_venda",
+      "type": "decimal",
+      "required": true,
+      "min": 0,
+      "max": 100000000,
+      "scale": 2,
+      "description": "Valor bruto sintético, sem separador de milhar."
+    },
+    {
+      "name": "supervisor_codigo",
+      "type": "string",
+      "required": true,
+      "max_length": 7,
+      "pattern": "^SUP-[0-9]{3}$",
+      "description": "Código sintético do supervisor vigente."
+    },
+    {
+      "name": "promotor_codigo",
+      "type": "string",
+      "required": true,
+      "max_length": 8,
+      "pattern": "^PROM-[0-9]{3}$",
+      "description": "Código sintético do promotor/vendedor vigente."
+    },
+    {
+      "name": "regiao_codigo",
+      "type": "string",
+      "required": true,
+      "max_length": 6,
+      "pattern": "^REG-[0-9]{2}$",
+      "description": "Código sintético da região vigente."
+    }
+  ],
+  "invalid_cases": [
+    "produto_codigo ausente no cabeçalho",
+    "venda_id duplicado",
+    "quantidade zero, negativa ou acima do limite",
+    "valor_venda não numérico, negativo ou com separador de milhar",
+    "campo textual iniciado por prefixo de fórmula",
+    "arquivo vazio, delimitador não suportado, encoding inválido ou nome inseguro"
+  ]
+}

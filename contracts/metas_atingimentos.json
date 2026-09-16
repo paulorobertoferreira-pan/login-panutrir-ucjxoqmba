@@ -1,0 +1,96 @@
+{
+  "contract_id": "panutrir.fase1.metas_atingimentos",
+  "version": "1.0.0",
+  "status": "fixture_sintetica",
+  "description": "Meta e atingimento sintéticos por ciclo e dimensões comerciais.",
+  "primary_key": ["registro_id"],
+  "file_rules": {
+    "extension": ".csv",
+    "encoding": "UTF-8",
+    "delimiters": [",", ";"],
+    "max_bytes": 1048576,
+    "max_data_rows": 10000,
+    "max_columns": 20,
+    "header_required": true
+  },
+  "cross_field_rules": [
+    "ciclo_referencia deve usar o formato YYYY-MM.",
+    "meta_valor e atingimento_valor não podem ser negativos.",
+    "registro_id deve ser único no arquivo."
+  ],
+  "columns": [
+    {
+      "name": "registro_id",
+      "type": "string",
+      "required": true,
+      "max_length": 8,
+      "pattern": "^MAT-[0-9]{4}$",
+      "description": "Identificador sintético único do registro."
+    },
+    {
+      "name": "ciclo_referencia",
+      "type": "month",
+      "required": true,
+      "format": "YYYY-MM",
+      "description": "Ciclo mensal sintético de referência."
+    },
+    {
+      "name": "cliente_codigo",
+      "type": "string",
+      "required": true,
+      "max_length": 7,
+      "pattern": "^CLI-[0-9]{3}$",
+      "description": "Código sintético do cliente."
+    },
+    {
+      "name": "produto_codigo",
+      "type": "string",
+      "required": true,
+      "max_length": 8,
+      "pattern": "^PROD-[0-9]{3}$",
+      "description": "Código sintético do produto."
+    },
+    {
+      "name": "supervisor_codigo",
+      "type": "string",
+      "required": true,
+      "max_length": 7,
+      "pattern": "^SUP-[0-9]{3}$",
+      "description": "Código sintético do supervisor."
+    },
+    {
+      "name": "promotor_codigo",
+      "type": "string",
+      "required": true,
+      "max_length": 8,
+      "pattern": "^PROM-[0-9]{3}$",
+      "description": "Código sintético do promotor/vendedor."
+    },
+    {
+      "name": "meta_valor",
+      "type": "decimal",
+      "required": true,
+      "min": 0,
+      "max": 100000000,
+      "scale": 2,
+      "description": "Meta financeira sintética."
+    },
+    {
+      "name": "atingimento_valor",
+      "type": "decimal",
+      "required": true,
+      "min": 0,
+      "max": 100000000,
+      "scale": 2,
+      "description": "Atingimento financeiro sintético observado no fixture."
+    }
+  ],
+  "invalid_cases": [
+    "meta_valor ou atingimento_valor não numérico",
+    "valor negativo ou acima do limite",
+    "ciclo_referencia fora do formato YYYY-MM",
+    "registro_id duplicado",
+    "campo textual iniciado por prefixo de fórmula",
+    "arquivo vazio, delimitador não suportado, encoding inválido ou nome inseguro"
+  ]
+}

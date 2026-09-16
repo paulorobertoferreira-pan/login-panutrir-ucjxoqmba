@@ -1,0 +1,102 @@
+{
+  "contract_id": "panutrir.fase1.estrutura_comercial",
+  "version": "1.0.0",
+  "status": "fixture_sintetica",
+  "description": "Estrutura comercial sintética com supervisor, promotor, região e vigência.",
+  "primary_key": ["estrutura_id"],
+  "file_rules": {
+    "extension": ".csv",
+    "encoding": "UTF-8",
+    "delimiters": [",", ";"],
+    "max_bytes": 1048576,
+    "max_data_rows": 10000,
+    "max_columns": 20,
+    "header_required": true
+  },
+  "cross_field_rules": [
+    "estrutura_id deve ser único no arquivo.",
+    "vigencia_fim, quando preenchida, não pode ser anterior a vigencia_inicio.",
+    "nomes são rótulos sintéticos e não representam colaboradores reais."
+  ],
+  "columns": [
+    {
+      "name": "estrutura_id",
+      "type": "string",
+      "required": true,
+      "max_length": 8,
+      "pattern": "^EST-[0-9]{4}$",
+      "description": "Identificador sintético da atribuição."
+    },
+    {
+      "name": "supervisor_codigo",
+      "type": "string",
+      "required": true,
+      "max_length": 7,
+      "pattern": "^SUP-[0-9]{3}$",
+      "description": "Código sintético do supervisor."
+    },
+    {
+      "name": "supervisor_nome",
+      "type": "string",
+      "required": true,
+      "max_length": 80,
+      "pattern": "^Supervisor Sintético [0-9]{2}$",
+      "description": "Nome sintético não pessoal."
+    },
+    {
+      "name": "promotor_codigo",
+      "type": "string",
+      "required": true,
+      "max_length": 8,
+      "pattern": "^PROM-[0-9]{3}$",
+      "description": "Código sintético do promotor/vendedor."
+    },
+    {
+      "name": "promotor_nome",
+      "type": "string",
+      "required": true,
+      "max_length": 80,
+      "pattern": "^Promotor Sintético [0-9]{2}$",
+      "description": "Nome sintético não pessoal."
+    },
+    {
+      "name": "regiao_codigo",
+      "type": "string",
+      "required": true,
+      "max_length": 6,
+      "pattern": "^REG-[0-9]{2}$",
+      "description": "Código sintético da região."
+    },
+    {
+      "name": "regiao_nome",
+      "type": "string",
+      "required": true,
+      "max_length": 80,
+      "pattern": "^Região Sintética [0-9]{2}$",
+      "description": "Nome sintético da região."
+    },
+    {
+      "name": "vigencia_inicio",
+      "type": "date",
+      "required": true,
+      "format": "YYYY-MM-DD",
+      "description": "Início da vigência sintética."
+    },
+    {
+      "name": "vigencia_fim",
+      "type": "date",
+      "required": false,
+      "nullable": true,
+      "format": "YYYY-MM-DD",
+      "description": "Fim da vigência; vazio significa vigente no recorte do fixture."
+    }
+  ],
+  "invalid_cases": [
+    "estrutura_id duplicado",
+    "código fora do padrão",
+    "nome que não segue o rótulo sintético permitido",
+    "vigencia_fim anterior a vigencia_inicio",
+    "delimitador pipe não suportado",
+    "arquivo vazio, encoding inválido ou nome inseguro"
+  ]
+}

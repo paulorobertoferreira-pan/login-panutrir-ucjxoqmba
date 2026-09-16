@@ -1,0 +1,105 @@
+{
+  "catalog_id": "panutrir.fase1.csv-contracts",
+  "version": "1.0.0",
+  "status": "fixture_sintetica",
+  "purpose": "Catálogo de contratos CSV para a T2.1 / SPEC-1-002.",
+  "real_data_policy": "Somente dados sintéticos. CSVs reais permanecem bloqueados até revalidação no Gate G1.",
+  "common_rules": {
+    "allowed_extensions": [".csv"],
+    "allowed_encodings": ["UTF-8"],
+    "utf8_bom": "optional",
+    "allowed_delimiters": [",", ";"],
+    "quote_character": "\"",
+    "line_endings": ["LF", "CRLF"],
+    "header": "required_first_line",
+    "duplicate_headers": "reject",
+    "unknown_columns": "reject",
+    "limits": {
+      "max_bytes": 1048576,
+      "max_data_rows": 10000,
+      "max_columns": 20
+    },
+    "formula_prefixes_rejected": ["=", "+", "-", "@", "\\t", "\\r"],
+    "decimal_separator": ".",
+    "date_format": "YYYY-MM-DD",
+    "month_format": "YYYY-MM",
+    "path_traversal": "reject"
+  },
+  "contracts": [
+    {
+      "contract_id": "panutrir.fase1.vendas",
+      "file_type": "vendas",
+      "schema": "contracts/vendas.json",
+      "valid_fixtures": ["fixtures/synthetic/valid/vendas.csv"],
+      "invalid_fixtures": [
+        "fixtures/synthetic/invalid/vendas_coluna_obrigatoria_ausente.csv",
+        "fixtures/synthetic/invalid/vendas_formula_perigosa.csv",
+        "fixtures/synthetic/invalid/vendas_vazia.csv",
+        "fixtures/synthetic/invalid/vendas_quantidade_negativa.csv"
+      ]
+    },
+    {
+      "contract_id": "panutrir.fase1.metas_atingimentos",
+      "file_type": "metas_atingimentos",
+      "schema": "contracts/metas_atingimentos.json",
+      "valid_fixtures": ["fixtures/synthetic/valid/metas_atingimentos.csv"],
+      "invalid_fixtures": ["fixtures/synthetic/invalid/metas_tipo_invalido.csv"]
+    },
+    {
+      "contract_id": "panutrir.fase1.produtos",
+      "file_type": "produtos",
+      "schema": "contracts/produtos.json",
+      "valid_fixtures": ["fixtures/synthetic/valid/produtos.csv"],
+      "invalid_fixtures": [
+        "fixtures/synthetic/invalid/produtos_formula_perigosa.csv",
+        "fixtures/synthetic/invalid/produtos_vigencia_invertida.csv"
+      ]
+    },
+    {
+      "contract_id": "panutrir.fase1.estrutura_comercial",
+      "file_type": "estrutura_comercial",
+      "schema": "contracts/estrutura_comercial.json",
+      "valid_fixtures": [
+        "fixtures/synthetic/valid/estrutura_comercial.csv",
+        "fixtures/synthetic/valid/estrutura_comercial_ponto_virgula.csv"
+      ],
+      "invalid_fixtures": [
+        "fixtures/synthetic/invalid/estrutura_chave_duplicada.csv",
+        "fixtures/synthetic/invalid/estrutura_delimitador_nao_suportado.csv"
+      ]
+    }
+  ],
+  "parameterized_cases": [
+    {
+      "case_id": "filename_path_traversal",
+      "input": "../vendas.csv",
+      "expected": "reject",
+      "stage": "T2.2/T2.3"
+    },
+    {
+      "case_id": "extension_not_csv",
+      "input": "vendas.txt",
+      "expected": "reject",
+      "stage": "T2.2/T2.3"
+    },
+    {
+      "case_id": "invalid_utf8_bytes",
+      "input": "latin1_bytes_descriptor.hex",
+      "expected": "reject",
+      "stage": "T2.2/T2.3"
+    },
+    {
+      "case_id": "size_limit_exceeded",
+      "input": "fixture_synthetic_over_1MiB.csv",
+      "expected": "reject_without_staging_change",
+      "stage": "T2.2/T2.3"
+    },
+    {
+      "case_id": "interrupted_transaction",
+      "input": "valid_fixture_with_forced_interruption",
+      "expected": "rollback_without_staging_change",
+      "stage": "T2.2/T2.3"
+    }
+  ],
+  "next_task_boundary": "T2.1 defines contracts and fixtures; parsing, upload, staging, idempotency and rollback are implemented and tested in T2.2/T2.3."
+}
