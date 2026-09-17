@@ -3,7 +3,8 @@
 -- da mesma entidade é recusada pelo banco; ambiguidade/lacuna viram pendência.
 -- Somente fixtures sintéticas na Fase 1; dados reais bloqueados até o Gate G1.
 
-CREATE EXTENSION IF NOT EXISTS btree_gist;
+CREATE SCHEMA IF NOT EXISTS extensions;
+CREATE EXTENSION IF NOT EXISTS btree_gist WITH SCHEMA extensions;
 
 -- ============ Produtos canônicos ============
 CREATE TABLE IF NOT EXISTS public.catalog_produtos (
