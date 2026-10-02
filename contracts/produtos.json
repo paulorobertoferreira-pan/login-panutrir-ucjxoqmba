@@ -1,8 +1,8 @@
 {
   "contract_id": "panutrir.fase1.produtos",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "status": "fixture_sintetica",
-  "description": "Catálogo sintético mínimo de produtos com vigência temporal.",
+  "description": "Catálogo sintético mínimo de produtos com vigência temporal. Revisado pela T2.1b (EMENDA 01/2026): inclui a classificação Branco/Especial exigida pela convergência de 50% (bloco 7 da metodologia oficial).",
   "primary_key": ["produto_codigo"],
   "file_rules": {
     "extension": ".csv",
@@ -15,6 +15,7 @@
   },
   "cross_field_rules": [
     "produto_codigo deve ser único no arquivo.",
+    "linha_tipo deve ser BRANCO, ESPECIAL ou OUTRA.",
     "vigencia_fim, quando preenchida, não pode ser anterior a vigencia_inicio.",
     "produto_nome é texto sintético e não pode começar por prefixo de fórmula."
   ],
@@ -41,6 +42,13 @@
       "max_length": 6,
       "pattern": "^LIN-[0-9]{2}$",
       "description": "Código sintético da linha."
+    },
+    {
+      "name": "linha_tipo",
+      "type": "enum",
+      "required": true,
+      "allowed_values": ["BRANCO", "ESPECIAL", "OUTRA"],
+      "description": "Classificação da linha para a convergência de 50% entre métodos (bloco 7 da metodologia oficial)."
     },
     {
       "name": "unidade_medida",
@@ -74,6 +82,7 @@
   ],
   "invalid_cases": [
     "produto_codigo duplicado",
+    "linha_tipo fora do conjunto permitido",
     "unidade_medida fora do conjunto permitido",
     "ativo diferente de true/false",
     "vigencia_fim anterior a vigencia_inicio",

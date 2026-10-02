@@ -1,8 +1,8 @@
 {
   "contract_id": "panutrir.fase1.vendas",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "status": "fixture_sintetica",
-  "description": "Fatos sintéticos de venda, preservando período, cliente, produto, supervisor, promotor e região.",
+  "description": "Fatos sintéticos de venda, preservando período, cliente, produto, supervisor, promotor e região. Revisado pela T2.1b (EMENDA 01/2026): inclui venda líquida (bloco 1) e canal direto/indireto (bloco 6) da metodologia oficial de cálculo da meta.",
   "primary_key": ["venda_id"],
   "file_rules": {
     "extension": ".csv",
@@ -15,7 +15,10 @@
   },
   "cross_field_rules": [
     "data_venda deve ser uma data ISO válida.",
-    "quantidade e valor_venda não podem ser negativos.",
+    "quantidade e valores financeiros não podem ser negativos.",
+    "valor_liquido deve ser igual a valor_venda menos devolucoes menos tributos.",
+    "devolucoes e tributos não podem exceder valor_venda.",
+    "canal_venda deve ser DIRETO ou INDIRETO.",
     "códigos devem obedecer aos padrões definidos e não podem ser vazios."
   ],
   "columns": [
@@ -65,7 +68,41 @@
       "min": 0,
       "max": 100000000,
       "scale": 2,
-      "description": "Valor bruto sintético, sem separador de milhar."
+      "description": "Valor bruto sintético da venda, antes de devoluções e tributos; sem separador de milhar."
+    },
+    {
+      "name": "devolucoes",
+      "type": "decimal",
+      "required": true,
+      "min": 0,
+      "max": 100000000,
+      "scale": 2,
+      "description": "Valor sintético de devoluções deduzido da venda bruta (bloco 1 da metodologia oficial)."
+    },
+    {
+      "name": "tributos",
+      "type": "decimal",
+      "required": true,
+      "min": 0,
+      "max": 100000000,
+      "scale": 2,
+      "description": "Valor sintético de tributos deduzido da venda bruta (bloco 1 da metodologia oficial)."
+    },
+    {
+      "name": "valor_liquido",
+      "type": "decimal",
+      "required": true,
+      "min": 0,
+      "max": 100000000,
+      "scale": 2,
+      "description": "Venda líquida sintética, base do cálculo da meta (bloco 1 da metodologia oficial)."
+    },
+    {
+      "name": "canal_venda",
+      "type": "enum",
+      "required": true,
+      "allowed_values": ["DIRETO", "INDIRETO"],
+      "description": "Canal da venda; insumo do mix de vendas indiretas (bloco 6 da metodologia oficial)."
     },
     {
       "name": "supervisor_codigo",
@@ -97,6 +134,8 @@
     "venda_id duplicado",
     "quantidade zero, negativa ou acima do limite",
     "valor_venda não numérico, negativo ou com separador de milhar",
+    "canal_venda fora do conjunto permitido",
+    "valor_liquido diferente de valor_venda menos devolucoes menos tributos",
     "campo textual iniciado por prefixo de fórmula",
     "arquivo vazio, delimitador não suportado, encoding inválido ou nome inseguro"
   ]

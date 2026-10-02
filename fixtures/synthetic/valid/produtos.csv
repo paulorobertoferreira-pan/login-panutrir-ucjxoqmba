@@ -1,4 +1,4 @@
-produto_codigo,produto_nome,linha_codigo,unidade_medida,ativo,vigencia_inicio,vigencia_fim
-PROD-001,Produto Sintético 01,LIN-01,UN,true,2026-01-01,
-PROD-002,Produto Sintético 02,LIN-01,CX,true,2026-01-01,
-PROD-003,Produto Sintético 03,LIN-02,KG,true,2026-01-01,2026-12-31
+produto_codigo,produto_nome,linha_codigo,linha_tipo,unidade_medida,ativo,vigencia_inicio,vigencia_fim
+PROD-001,Produto Sintético 01,LIN-01,BRANCO,UN,true,2026-01-01,
+PROD-002,Produto Sintético 02,LIN-01,BRANCO,CX,true,2026-01-01,
+PROD-003,Produto Sintético 03,LIN-02,ESPECIAL,KG,true,2026-01-01,2026-12-31

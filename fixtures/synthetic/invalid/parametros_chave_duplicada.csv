@@ -1,0 +1,3 @@
+parametro_id,nome_parametro,valor_numerico,unidade,versao_parametro,origem,vigencia_inicio,vigencia_fim
+PAR-9001,peso_baseline_mes_recente,0.35,PESO,1,SINTETICO,2026-01-01,
+PAR-9001,peso_baseline_mes_recente,0.40,PESO,2,SINTETICO,2026-02-01,

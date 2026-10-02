@@ -1,0 +1,2 @@
+venda_id,data_venda,cliente_codigo,produto_codigo,quantidade,valor_venda,devolucoes,tributos,valor_liquido,canal_venda,supervisor_codigo,promotor_codigo,regiao_codigo
+VEN-9001,2026-01-05,CLI-001,PROD-001,10,125.50,0.00,12.55,100.00,DIRETO,SUP-001,PROM-001,REG-01

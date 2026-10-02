@@ -1,0 +1,9 @@
+parametro_id,nome_parametro,valor_numerico,unidade,versao_parametro,origem,vigencia_inicio,vigencia_fim
+PAR-0001,peso_baseline_mes_recente,0.35,PESO,1,SINTETICO,2026-01-01,
+PAR-0002,peso_baseline_mes_anterior,0.30,PESO,1,SINTETICO,2026-01-01,
+PAR-0003,peso_baseline_janela_24m,0.35,PESO,1,SINTETICO,2026-01-01,
+PAR-0004,peso_g1,0.40,PESO,1,SINTETICO,2026-01-01,
+PAR-0005,peso_g2,0.60,PESO,1,SINTETICO,2026-01-01,
+PAR-0006,gap_diretoria,0.00,PERCENTUAL,1,SINTETICO,2026-01-01,
+PAR-0007,mix_indireto,0.055,PERCENTUAL,1,SINTETICO,2026-01-01,
+PAR-0008,convergencia_branco_especial,0.50,PERCENTUAL,1,SINTETICO,2026-01-01,

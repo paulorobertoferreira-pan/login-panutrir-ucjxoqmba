@@ -20,8 +20,9 @@ Esta pasta contém somente contratos e dados fictícios da Fase 1. Nenhum CSV re
 
 ## Arquivos
 
-- `vendas.json`: fatos de venda por período, cliente, produto e estrutura comercial.
+- `vendas.json` (v1.1.0): fatos de venda por período, cliente, produto e estrutura comercial. Revisado pela T2.1b: inclui `valor_venda` (bruto), `devolucoes`, `tributos`, `valor_liquido` (venda líquida, bloco 1 da metodologia oficial) e `canal_venda` (DIRETO/INDIRETO, bloco 6).
 - `metas_atingimentos.json`: meta e atingimento sintéticos por ciclo e dimensões comerciais.
-- `produtos.json`: catálogo mínimo de produtos para os testes de importação.
+- `produtos.json` (v1.1.0): catálogo mínimo de produtos para os testes de importação. Revisado pela T2.1b: inclui `linha_tipo` (BRANCO/ESPECIAL/OUTRA, bloco 7 da metodologia oficial).
 - `estrutura_comercial.json`: responsáveis, regiões e vigências sintéticas.
-- `catalogo-schemas.json`: índice versionado dos quatro contratos e suas fixtures.
+- `parametros_calculo.json` (novo na T2.1b): estrutura versionada dos parâmetros do cálculo oficial (pesos 35/30/35, G 40/60, GAP Diretoria, mix 5,5%, convergência 50%). Na Fase 1 somente valores sintéticos; valores oficiais só na T6.2, após os Gates G1–G3.
+- `catalogo-schemas.json` (v1.1.0): índice versionado dos cinco contratos e suas fixtures, com rastreabilidade bloco a bloco da metodologia oficial.

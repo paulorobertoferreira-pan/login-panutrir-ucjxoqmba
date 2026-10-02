@@ -1,0 +1,2 @@
+produto_codigo,produto_nome,linha_codigo,linha_tipo,unidade_medida,ativo,vigencia_inicio,vigencia_fim
+PROD-9001,Produto Sintético 90,LIN-01,PREMIUM,UN,true,2026-01-01,

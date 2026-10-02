@@ -1,9 +1,23 @@
 {
   "catalog_id": "panutrir.fase1.csv-contracts",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "status": "fixture_sintetica",
-  "purpose": "Catálogo de contratos CSV para a T2.1 / SPEC-1-002.",
+  "purpose": "Catálogo de contratos CSV para a T2.1 / SPEC-1-002, revisado pela T2.1b (EMENDA 01/2026) contra a metodologia oficial de cálculo da meta (ago/2026).",
   "real_data_policy": "Somente dados sintéticos. CSVs reais permanecem bloqueados até revalidação no Gate G1.",
+  "methodology_traceability": {
+    "fonte": "06_notas/2026-09-23-metodologia-oficial-ago-2026.md",
+    "blocos": {
+      "bloco_1_venda_liquida": "contracts/vendas.json v1.1.0 (valor_venda, devolucoes, tributos, valor_liquido)",
+      "bloco_2_is_sazonal_mediana": "histórico mensal por região/supervisor/promotor já garantido por vendas + estrutura_comercial",
+      "bloco_3_baseline_24m_35_30_35": "histórico 24 meses + contracts/parametros_calculo.json (pesos)",
+      "bloco_4_g_40_60": "contracts/parametros_calculo.json (peso_g1, peso_g2)",
+      "bloco_5_gap_diretoria": "contracts/parametros_calculo.json (gap_diretoria)",
+      "bloco_6_mix_5_5_indireto": "contracts/vendas.json v1.1.0 (canal_venda) + contracts/parametros_calculo.json (mix_indireto)",
+      "bloco_7_branco_especial_50": "contracts/produtos.json v1.1.0 (linha_tipo) + contracts/parametros_calculo.json (convergencia_branco_especial)",
+      "bloco_8_reconciliacao_bloqueante": "exigência de T6.2 (CA-1-07a); insumos garantidos pelos contratos acima"
+    },
+    "ressalva": "blocos 9 e 10 da metodologia referem-se à planilha original (Metodologia_1_.xlsx); o alinhamento fino de campos acontece na T6.2, com dúvidas registradas para a consultora."
+  },
   "common_rules": {
     "allowed_extensions": [".csv"],
     "allowed_encodings": ["UTF-8"],
@@ -35,7 +49,9 @@
         "fixtures/synthetic/invalid/vendas_coluna_obrigatoria_ausente.csv",
         "fixtures/synthetic/invalid/vendas_formula_perigosa.csv",
         "fixtures/synthetic/invalid/vendas_vazia.csv",
-        "fixtures/synthetic/invalid/vendas_quantidade_negativa.csv"
+        "fixtures/synthetic/invalid/vendas_quantidade_negativa.csv",
+        "fixtures/synthetic/invalid/vendas_valor_liquido_inconsistente.csv",
+        "fixtures/synthetic/invalid/vendas_canal_invalido.csv"
       ]
     },
     {
@@ -52,7 +68,8 @@
       "valid_fixtures": ["fixtures/synthetic/valid/produtos.csv"],
       "invalid_fixtures": [
         "fixtures/synthetic/invalid/produtos_formula_perigosa.csv",
-        "fixtures/synthetic/invalid/produtos_vigencia_invertida.csv"
+        "fixtures/synthetic/invalid/produtos_vigencia_invertida.csv",
+        "fixtures/synthetic/invalid/produtos_linha_tipo_invalido.csv"
       ]
     },
     {
@@ -66,6 +83,17 @@
       "invalid_fixtures": [
         "fixtures/synthetic/invalid/estrutura_chave_duplicada.csv",
         "fixtures/synthetic/invalid/estrutura_delimitador_nao_suportado.csv"
+      ]
+    },
+    {
+      "contract_id": "panutrir.fase1.parametros_calculo",
+      "file_type": "parametros_calculo",
+      "schema": "contracts/parametros_calculo.json",
+      "valid_fixtures": ["fixtures/synthetic/valid/parametros_calculo.csv"],
+      "invalid_fixtures": [
+        "fixtures/synthetic/invalid/parametros_chave_duplicada.csv",
+        "fixtures/synthetic/invalid/parametros_versao_invalida.csv",
+        "fixtures/synthetic/invalid/parametros_origem_oficial_bloqueada.csv"
       ]
     }
   ],
@@ -101,5 +129,5 @@
       "stage": "T2.2/T2.3"
     }
   ],
-  "next_task_boundary": "T2.1 defines contracts and fixtures; parsing, upload, staging, idempotency and rollback are implemented and tested in T2.2/T2.3."
+  "next_task_boundary": "T2.1/T2.1b define contratos e fixtures; parsing, upload, staging, idempotência e rollback são implementados e testados em T2.2/T2.3."
 }

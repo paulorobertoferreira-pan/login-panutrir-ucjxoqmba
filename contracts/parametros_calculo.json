@@ -1,0 +1,96 @@
+{
+  "contract_id": "panutrir.fase1.parametros_calculo",
+  "version": "1.0.0",
+  "status": "fixture_sintetica",
+  "description": "Estrutura versionada dos parâmetros do cálculo oficial da meta (T2.1b / EMENDA 01/2026): pesos do baseline 24 meses 35/30/35 (bloco 3), G 40/60 (bloco 4), GAP Diretoria (bloco 5), mix 5,5% indireto (bloco 6) e convergência Branco/Especial 50% (bloco 7). Na Fase 1 carrega somente valores sintéticos; os valores oficiais versionados para o cálculo serão carregados apenas na T6.2, após os Gates G1–G3.",
+  "primary_key": ["parametro_id"],
+  "file_rules": {
+    "extension": ".csv",
+    "encoding": "UTF-8",
+    "delimiters": [",", ";"],
+    "max_bytes": 1048576,
+    "max_data_rows": 10000,
+    "max_columns": 20,
+    "header_required": true
+  },
+  "cross_field_rules": [
+    "parametro_id deve ser único no arquivo.",
+    "valor_numerico não pode ser negativo.",
+    "versao_parametro deve ser inteiro maior ou igual a 1.",
+    "vigencia_fim, quando preenchida, não pode ser anterior a vigencia_inicio.",
+    "nome_parametro é texto sintético e não pode começar por prefixo de fórmula."
+  ],
+  "columns": [
+    {
+      "name": "parametro_id",
+      "type": "string",
+      "required": true,
+      "max_length": 8,
+      "pattern": "^PAR-[0-9]{4}$",
+      "description": "Identificador sintético único do parâmetro."
+    },
+    {
+      "name": "nome_parametro",
+      "type": "string",
+      "required": true,
+      "max_length": 60,
+      "description": "Nome estável do parâmetro (ex.: peso_baseline_mes_recente, peso_g1, gap_diretoria, mix_indireto, convergencia_branco_especial)."
+    },
+    {
+      "name": "valor_numerico",
+      "type": "decimal",
+      "required": true,
+      "min": 0,
+      "max": 1000000,
+      "scale": 4,
+      "description": "Valor numérico do parâmetro; na Fase 1, somente sintético."
+    },
+    {
+      "name": "unidade",
+      "type": "enum",
+      "required": true,
+      "allowed_values": ["PERCENTUAL", "PESO", "MULTIPLICADOR", "VALOR"],
+      "description": "Unidade de interpretação do valor."
+    },
+    {
+      "name": "versao_parametro",
+      "type": "integer",
+      "required": true,
+      "min": 1,
+      "max": 1000,
+      "description": "Versão do parâmetro; mudanças de valor criam nova versão, nunca sobrescrevem."
+    },
+    {
+      "name": "origem",
+      "type": "enum",
+      "required": true,
+      "allowed_values": ["SINTETICO", "OFICIAL"],
+      "description": "Origem do valor; OFICIAL somente após os Gates G1–G3."
+    },
+    {
+      "name": "vigencia_inicio",
+      "type": "date",
+      "required": true,
+      "format": "YYYY-MM-DD",
+      "description": "Início da vigência do valor do parâmetro."
+    },
+    {
+      "name": "vigencia_fim",
+      "type": "date",
+      "required": false,
+      "nullable": true,
+      "format": "YYYY-MM-DD",
+      "description": "Fim da vigência; vazio significa vigente no recorte do fixture."
+    }
+  ],
+  "invalid_cases": [
+    "parametro_id duplicado",
+    "valor_numerico não numérico, negativo ou acima do limite",
+    "versao_parametro zero, negativo ou não inteiro",
+    "unidade fora do conjunto permitido",
+    "origem fora do conjunto permitido",
+    "vigencia_fim anterior a vigencia_inicio",
+    "campo textual iniciado por prefixo de fórmula",
+    "arquivo vazio, delimitador não suportado, encoding inválido ou nome inseguro"
+  ]
+}
