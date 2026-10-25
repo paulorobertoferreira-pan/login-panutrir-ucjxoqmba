@@ -36,7 +36,7 @@ import os
 import sys
 from collections import defaultdict
 from datetime import date, datetime
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -44,6 +44,9 @@ from validador_vendas import _abrir_csv, _abrir_xlsx, _dec, _mes, ALIASES, OBRIG
 
 LOTE_INSERT = 5000
 CENTAVO = Decimal("0.01")
+# ROUND_HALF_UP explicito: o contexto padrao do Decimal e ROUND_HALF_EVEN
+# (banker's rounding), que arredonda 24.645 para 24.64 em vez de 24.65 — 151 valores
+# de vlrtroca no meio do centavo nas congeladas reais. Contrato vendas v2.0.0 exige HALF_UP.
 
 
 # --------------------------------------------------------------------- leitura
@@ -130,9 +133,9 @@ def agregar(caminho: Path, meses_filtro: set[str] | None = None) -> dict:
             # 15,90 (medido: até 15 casas em `vlrtroca`). Arredondar a 2 casas na entrada é o
             # correto — o valor monetário real tem 2. Sem isso a soma acumula ~R$ 0,10/mês de
             # resíduo e o CA-1-04 (tolerância de R$ 0,01) nunca fecha.
-            vb = vb.quantize(CENTAVO)
-            vd = vd.quantize(CENTAVO)
-            vt = vt.quantize(CENTAVO)
+            vb = vb.quantize(CENTAVO, rounding=ROUND_HALF_UP)
+            vd = vd.quantize(CENTAVO, rounding=ROUND_HALF_UP)
+            vt = vt.quantize(CENTAVO, rounding=ROUND_HALF_UP)
 
             if vb == 0 and vd == 0 and vt == 0:
                 sem_valor += 1
