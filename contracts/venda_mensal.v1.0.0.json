@@ -1,0 +1,24 @@
+{
+  "contrato": "venda_mensal",
+  "versao": "1.0.0",
+  "descricao": "Saída da carga agregada: uma linha por mês × cliente × SKU (SPEC-1-002).",
+  "origem": "M-02, M-05; SPEC-1-002",
+  "atualizado_em": "2026-10-24",
+  "chave": ["mes", "cod_cliente", "cod_sku"],
+  "colunas": [
+    {"nome": "mes", "tipo": "date", "regra": "primeiro dia do mês; constraint impede dia solto"},
+    {"nome": "cod_cliente", "tipo": "integer", "regra": "> 0 (V-02)"},
+    {"nome": "cod_sku", "tipo": "integer", "regra": "> 0"},
+    {"nome": "vlritens", "tipo": "numeric(18,2)", "regra": "soma de TODOS os tipos; arredondado a 2 casas na leitura (achado a6)"},
+    {"nome": "vlrdesc", "tipo": "numeric(18,2)", "regra": "soma de TODOS os tipos; arredondado a 2 casas na leitura"},
+    {"nome": "vlrtroca", "tipo": "numeric(18,2)", "regra": "soma de TODOS os tipos; arredondado a 2 casas na leitura"},
+    {"nome": "qtdade", "tipo": "numeric(18,3)", "regra": "soma de TODOS os tipos"},
+    {"nome": "venda_bruta", "tipo": "numeric(18,2)", "regra": "coluna gerada = vlritens"},
+    {"nome": "venda_liquida", "tipo": "numeric(18,2)", "regra": "coluna gerada = vlritens - vlrdesc - vlrtroca (M-02); pode ser negativa (estorno)"},
+    {"nome": "carga_id", "tipo": "uuid", "regra": "rastreabilidade para carga_registro"}
+  ],
+  "garantias": {
+    "CA-1-05": "chave única (mes, cod_cliente, cod_sku) + carga apaga e reinsere o mês numa única transação",
+    "CA-1-06": "cada carga grava linha em carga_registro com hash, contagens, totais e rejeições"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "contrato": "parametros_calculo",
+  "versao": "2.0.0",
+  "descricao": "Estrutura versionada dos parâmetros de cálculo da meta (EMENDA 02/2026). Cada versão é imutável no banco; alterar exige criar versão nova.",
+  "origem": "06_notas/2026-10-20-metodologia-oficial-out-2026.md (M-01..M-31) e gabarito G-01..G-19",
+  "atualizado_em": "2026-10-24",
+  "parametros": [
+    {"id": "P-01", "nome": "meta_corporativa", "tipo": "monetario", "unidade": "BRL", "valor_out2026": 13000000.00, "origem": "diretoria", "nota": "Meta corporativa Out/26 (G-01)."},
+    {"id": "P-02", "nome": "indice_sazonal", "tipo": "decimal", "valor_out2026": 1.0319, "origem": "historico_3_anos", "nota": "Índice sazonal do mês (M-04)."},
+    {"id": "P-03", "nome": "dias_uteis", "tipo": "inteiro", "valor_out2026": 22, "origem": "calendario", "nota": "Dias úteis do mês de referência (M-05)."},
+    {"id": "P-04", "nome": "peso_historico_24m", "tipo": "decimal", "valor_out2026": 0.35, "origem": "metodologia", "nota": "Peso do bloco histórico 24 meses (M-06, 35/30/35)."},
+    {"id": "P-05", "nome": "peso_recente_6m", "tipo": "decimal", "valor_out2026": 0.30, "origem": "metodologia", "nota": "Peso do bloco recente 6 meses (M-06, 35/30/35)."},
+    {"id": "P-06", "nome": "peso_mes_anterior", "tipo": "decimal", "valor_out2026": 0.35, "origem": "metodologia", "nota": "Peso do mês anterior (M-06, 35/30/35)."},
+    {"id": "P-07", "nome": "crescimento_g", "tipo": "decimal", "valor_out2026": 0.02591659, "origem": "ver Q-10/Q-10b", "nota": "Crescimento esperado G. Q-10: CALCULADO, não informado. Fórmula pendente (Q-10b)."},
+    {"id": "P-08", "nome": "gap_diretoria", "tipo": "monetario", "valor_out2026": null, "origem": "diretoria", "nota": "GAP total a distribuir (M-20)."},
+    {"id": "P-09", "nome": "mix_indireto", "tipo": "decimal", "valor_out2026": 0.055, "origem": "metodologia", "nota": "Mix 5,5% fixo do indireto (M-21)."},
+    {"id": "P-10", "nome": "convergencia_especiais", "tipo": "decimal", "valor_out2026": 0.50, "origem": "metodologia", "nota": "Convergência 50% no mix especiais (M-22)."},
+    {"id": "P-11", "nome": "piso_tecnico", "tipo": "monetario", "valor_out2026": 50000.00, "origem": "metodologia", "nota": "Piso técnico por promotor (M-24, G-19)."},
+    {"id": "P-12", "nome": "janela_historico_meses", "tipo": "inteiro", "valor_out2026": 24, "origem": "metodologia", "nota": "Janela do histórico (M-03)."},
+    {"id": "P-13", "nome": "janela_recente_meses", "tipo": "inteiro", "valor_out2026": 6, "origem": "metodologia", "nota": "Janela do bloco recente (M-06)."},
+    {"id": "P-14", "nome": "excluir_panettone", "tipo": "booleano", "valor_out2026": true, "origem": "metodologia", "nota": "Excluir panetone do cálculo (M-03, G-11)."},
+    {"id": "P-15", "nome": "excluir_sem_venda_3m", "tipo": "booleano", "valor_out2026": true, "origem": "metodologia", "nota": "Excluir cliente sem venda nos últimos 3 meses (M-05)."},
+    {"id": "P-16", "nome": "reservado", "tipo": "n/a", "valor_out2026": null, "origem": "ver Q-20", "nota": "Reservado; preencher na T6.1 (Q-20)."}
+  ],
+  "sortimento_restrito_assai_sp": ["5", "6", "1224", "69251", "82051"],
+  "substituicao": [{"de_sku": "81661", "para_sku": "5", "fator": 0.59, "escopo": "ASSAI_SP", "nota": "PlufiNut → Pão de Leite a 59% (M-12)."}],
+  "achados_da_inspecao_real": {
+    "a1_tipos": "A coluna tipo das congeladas tem 8 valores; vlrtroca só vem preenchido fora de 'Venda'.",
+    "a2_estornos": "Existem valores negativos legítimos (~0,2%); nunca truncar em zero.",
+    "a3_venda_bruta": "Venda bruta = vlritens (G-11)."
+  },
+  "colunas_calculadas": [
+    {"nome": "venda_liquida", "expr": "vlritens - vlrdesc - vlrtroca", "descricao": "M-02, coluna gerada no banco."},
+    {"nome": "arredondamento_monetario", "expr": "vlritens, vlrdesc e vlrtroca arredondados a 2 casas (ROUND_HALF_UP) na leitura", "descricao": "Normalização obrigatória contra o ruido de ponto flutuante do BI (achado a6)."}
+  ]
+}
