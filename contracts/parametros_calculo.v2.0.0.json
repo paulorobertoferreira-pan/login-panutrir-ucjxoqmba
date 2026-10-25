@@ -1,36 +1,60 @@
 {
-  "contrato": "parametros_calculo",
-  "versao": "2.0.0",
-  "descricao": "Estrutura versionada dos parâmetros de cálculo da meta (EMENDA 02/2026). Cada versão é imutável no banco; alterar exige criar versão nova.",
-  "origem": "06_notas/2026-10-20-metodologia-oficial-out-2026.md (M-01..M-31) e gabarito G-01..G-19",
-  "atualizado_em": "2026-10-24",
-  "parametros": [
-    {"id": "P-01", "nome": "meta_corporativa", "tipo": "monetario", "unidade": "BRL", "valor_out2026": 13000000.00, "origem": "diretoria", "nota": "Meta corporativa Out/26 (G-01)."},
-    {"id": "P-02", "nome": "indice_sazonal", "tipo": "decimal", "valor_out2026": 1.0319, "origem": "historico_3_anos", "nota": "Índice sazonal do mês (M-04)."},
-    {"id": "P-03", "nome": "dias_uteis", "tipo": "inteiro", "valor_out2026": 22, "origem": "calendario", "nota": "Dias úteis do mês de referência (M-05)."},
-    {"id": "P-04", "nome": "peso_historico_24m", "tipo": "decimal", "valor_out2026": 0.35, "origem": "metodologia", "nota": "Peso do bloco histórico 24 meses (M-06, 35/30/35)."},
-    {"id": "P-05", "nome": "peso_recente_6m", "tipo": "decimal", "valor_out2026": 0.30, "origem": "metodologia", "nota": "Peso do bloco recente 6 meses (M-06, 35/30/35)."},
-    {"id": "P-06", "nome": "peso_mes_anterior", "tipo": "decimal", "valor_out2026": 0.35, "origem": "metodologia", "nota": "Peso do mês anterior (M-06, 35/30/35)."},
-    {"id": "P-07", "nome": "crescimento_g", "tipo": "decimal", "valor_out2026": 0.02591659, "origem": "ver Q-10/Q-10b", "nota": "Crescimento esperado G. Q-10: CALCULADO, não informado. Fórmula pendente (Q-10b)."},
-    {"id": "P-08", "nome": "gap_diretoria", "tipo": "monetario", "valor_out2026": null, "origem": "diretoria", "nota": "GAP total a distribuir (M-20)."},
-    {"id": "P-09", "nome": "mix_indireto", "tipo": "decimal", "valor_out2026": 0.055, "origem": "metodologia", "nota": "Mix 5,5% fixo do indireto (M-21)."},
-    {"id": "P-10", "nome": "convergencia_especiais", "tipo": "decimal", "valor_out2026": 0.50, "origem": "metodologia", "nota": "Convergência 50% no mix especiais (M-22)."},
-    {"id": "P-11", "nome": "piso_tecnico", "tipo": "monetario", "valor_out2026": 50000.00, "origem": "metodologia", "nota": "Piso técnico por promotor (M-24, G-19)."},
-    {"id": "P-12", "nome": "janela_historico_meses", "tipo": "inteiro", "valor_out2026": 24, "origem": "metodologia", "nota": "Janela do histórico (M-03)."},
-    {"id": "P-13", "nome": "janela_recente_meses", "tipo": "inteiro", "valor_out2026": 6, "origem": "metodologia", "nota": "Janela do bloco recente (M-06)."},
-    {"id": "P-14", "nome": "excluir_panettone", "tipo": "booleano", "valor_out2026": true, "origem": "metodologia", "nota": "Excluir panetone do cálculo (M-03, G-11)."},
-    {"id": "P-15", "nome": "excluir_sem_venda_3m", "tipo": "booleano", "valor_out2026": true, "origem": "metodologia", "nota": "Excluir cliente sem venda nos últimos 3 meses (M-05)."},
-    {"id": "P-16", "nome": "reservado", "tipo": "n/a", "valor_out2026": null, "origem": "ver Q-20", "nota": "Reservado; preencher na T6.1 (Q-20)."}
-  ],
-  "sortimento_restrito_assai_sp": ["5", "6", "1224", "69251", "82051"],
-  "substituicao": [{"de_sku": "81661", "para_sku": "5", "fator": 0.59, "escopo": "ASSAI_SP", "nota": "PlufiNut → Pão de Leite a 59% (M-12)."}],
-  "achados_da_inspecao_real": {
-    "a1_tipos": "A coluna tipo das congeladas tem 8 valores; vlrtroca só vem preenchido fora de 'Venda'.",
-    "a2_estornos": "Existem valores negativos legítimos (~0,2%); nunca truncar em zero.",
-    "a3_venda_bruta": "Venda bruta = vlritens (G-11)."
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "panutrir/contracts/parametros_calculo/2.0.0",
+  "title": "parametros_calculo — conjunto versionado de parâmetros da meta (Panutrir)",
+  "description": "Contrato da versão de parâmetros (SPEC-1-003 / T3.1). Substitui a v1.0.0 da T2.1b, que previa 'somente sintético': a EMENDA 02/2026 libera os valores oficiais. Nenhum número da metodologia pode existir no código do motor — todos vêm daqui, amarrados a uma versão.",
+  "version": "2.0.0",
+  "origem": "06_notas/2026-10-20-metodologia-oficial-out-2026.md (tabela 'Parâmetros Out/26')",
+  "tabelas": ["parametros_versao", "parametros_valor", "sortimento_restrito", "substituicao"],
+  "regra_central": {
+    "id": "PV-01",
+    "regra": "Versão não se edita. Alterar um parâmetro cria versão nova a partir da anterior, com autor, data e motivo; a anterior permanece intacta.",
+    "garantia": "Não é convenção: trigger no banco recusa UPDATE e DELETE em parametros_valor de versão com status oficial ou substituida.",
+    "prova": "update em P-07 da OUT-2026-v1 devolve erro 23001 (restrict_violation)"
   },
-  "colunas_calculadas": [
-    {"nome": "venda_liquida", "expr": "vlritens - vlrdesc - vlrtroca", "descricao": "M-02, coluna gerada no banco."},
-    {"nome": "arredondamento_monetario", "expr": "vlritens, vlrdesc e vlrtroca arredondados a 2 casas (ROUND_HALF_UP) na leitura", "descricao": "Normalização obrigatória contra o ruido de ponto flutuante do BI (achado a6)."}
-  ]
+  "parametros": [
+    { "codigo": "P-01", "descricao": "Mês de referência", "tipo": "texto", "formato": "^[0-9]{4}-(0[1-9]|1[0-2])$", "unidade": "YYYY-MM", "valor_out_2026": "2026-10", "regra": "M-01" },
+    { "codigo": "P-02", "descricao": "Meta Diretoria", "tipo": "numero", "unidade": "BRL", "min": 0, "valor_out_2026": 13000000.00, "regra": "M-18" },
+    { "codigo": "P-03", "descricao": "Janela de elegibilidade", "tipo": "json", "unidade": "meses", "valor_out_2026": { "meses": 3, "periodo": "Jul-Set/26", "metrica": "venda bruta", "condicao": "> 0" }, "regra": "M-05" },
+    { "codigo": "P-04", "descricao": "Janela e pesos do motor", "tipo": "json", "unidade": "peso", "valor_out_2026": { "janela_meses": 24, "pesos": [{ "bloco": "M-1:M-6", "peso": 0.35 }, { "bloco": "M-7:M-12", "peso": 0.30 }, { "bloco": "M-13:M-24", "peso": 0.35 }] }, "regra": "M-07", "invariante": "soma dos pesos = 1" },
+    { "codigo": "P-05", "descricao": "Índice Sazonal do mês", "tipo": "numero", "unidade": "indice", "valor_out_2026": 1.0319, "regra": "M-10", "pendente_de": "Q-08" },
+    { "codigo": "P-06", "descricao": "Dias úteis do mês", "tipo": "numero", "unidade": "dias", "min": 1, "max": 31, "valor_out_2026": 22, "regra": "M-08", "pendente_de": "Q-09" },
+    { "codigo": "P-07", "descricao": "Crescimento esperado G", "tipo": "numero", "unidade": "fracao", "valor_out_2026": 0.02591659, "regra": "M-11", "pendente_de": "Q-10", "observacao": "Q-10 decide se é informado pela Diretoria ou calculado por 40% histórico + 60% recente. O valor está carregado como informado; a fórmula, se confirmada, entra como parâmetro composto sem alterar este contrato." },
+    { "codigo": "P-08", "descricao": "Introdução", "tipo": "json", "unidade": "fator", "valor_out_2026": { "maturidade_meses": 12, "primeiro_mes": 1.25, "meses_2_a_12": 1.10 }, "regra": "M-12" },
+    { "codigo": "P-09", "descricao": "Piso técnico", "tipo": "texto", "unidade": "formula", "valor_out_2026": "media dos meses positivos da janela de 3 meses x (1+G)", "regra": "M-14" },
+    { "codigo": "P-10", "descricao": "Substituição", "tipo": "json", "unidade": "regra", "valor_out_2026": { "sku_origem": "81661", "sku_destino": "5", "rede": "GRUPO ASSAI", "uf": "SP", "taxa": 0.59 }, "regra": "M-15", "observacao": "SKUs confirmados nas bases reais: 81661 = PAO FORMA PLUFI NUT 400G; 5 = PAO LEITE PANUTRIR 400G" },
+    { "codigo": "P-11", "descricao": "Sortimento Assaí SP", "tipo": "json", "unidade": "lista", "valor_out_2026": { "rede": "GRUPO ASSAI", "uf": "SP", "skus": ["5", "6", "1224", "69251", "82051"] }, "regra": "M-06", "observacao": "os 5 SKUs existem na BASE_PRODUTOS" },
+    { "codigo": "P-12", "descricao": "Share final Indireto", "tipo": "numero", "unidade": "fracao", "valor_out_2026": 0.055, "regra": "M-19" },
+    { "codigo": "P-13", "descricao": "Mix de linha", "tipo": "json", "unidade": "regra", "valor_out_2026": { "janela_meses": 6, "convergencia": 0.50, "aplicacao": "somente GAP Direto" }, "regra": "M-21" },
+    { "codigo": "P-14", "descricao": "Limiar de baixa relevância", "tipo": "numero", "unidade": "BRL", "valor_out_2026": 300.00, "regra": "M-26" },
+    { "codigo": "P-15", "descricao": "Exclusão", "tipo": "texto", "unidade": "regra", "valor_out_2026": "PANETTONE (descricao ou categoria contem)", "regra": "M-03" },
+    { "codigo": "P-16", "descricao": "Tolerância de reconciliação", "tipo": "numero", "unidade": "BRL", "valor_out_2026": null, "regra": "M-30", "pendente_de": "Q-20", "observacao": "Sem valor por decisão: a Q-20 (onde arredondar o GAP Direto) ainda está aberta. Carregar um número seria inventar regra. A T6.1 preenche numa versão nova." }
+  ],
+  "tabelas_auxiliares": {
+    "sortimento_restrito": { "chave": ["versao_id", "rede", "uf", "sku_codigo"], "linhas_out_2026": 5, "regra": "M-06" },
+    "substituicao": { "chave": ["versao_id", "rede", "uf", "sku_origem", "sku_destino"], "linhas_out_2026": 1, "restricao_taxa": "0 < taxa <= 1", "regra": "M-15" }
+  },
+  "regras_de_validacao": [
+    { "id": "PV-02", "regra": "parametro_codigo no formato P-NN", "erro": "constraint parametros_valor_codigo_ck" },
+    { "id": "PV-03", "regra": "um parâmetro por código em cada versão", "erro": "unique (versao_id, parametro_codigo)" },
+    { "id": "PV-04", "regra": "cada parâmetro tem no máximo uma representação de valor (numero, texto ou json), podendo ser nulo quando pendente de pergunta aberta", "erro": "constraint parametros_valor_uma_representacao" },
+    { "id": "PV-05", "regra": "no máximo uma versão oficial por mês", "erro": "exclusion constraint parametros_versao_oficial_unica" },
+    { "id": "PV-06", "regra": "autor e motivo são obrigatórios ao criar versão nova", "erro": "exception no criar_versao_parametros" },
+    { "id": "PV-07", "regra": "identidade da versão (código, mês, origem) não muda depois de criada", "erro": "trigger parametros_versao_protege" },
+    { "id": "PV-08", "regra": "rascunho é editável; oficial e substituida são congeladas", "erro": "trigger parametros_valor_imutavel" }
+  ],
+  "seguranca": {
+    "leitura": "authenticated: parâmetros não são dado pessoal nem segredo",
+    "escrita": "private.has_operation('criar_configurar_ciclo') — operação existente da T1.1, que permite administrador e operador. TODO(T3.1 -> T1.2): trocar por 'editar_parametros' quando a T1.2 renomear as operações.",
+    "por_que": "inventar 'editar_parametros' agora anteciparia uma decisão da T1.2, que está bloqueada aguardando a Kim",
+    "lgpd": "sem dado pessoal: parâmetros são números de gestão"
+  },
+  "migracao_da_v1_0_0": {
+    "de": "1.0.0",
+    "para": "2.0.0",
+    "quebra_compatibilidade": true,
+    "motivo": "deixa de ser 'somente sintético' (EMENDA 02/2026) e passa a espelhar a tabela real, com P-01..P-16 nomeados pela metodologia Out/26",
+    "removido": "parâmetros agrupados por bloco da metodologia de ago/26 (EMENDA 01 superada)",
+    "adicionado": ["P-01..P-16 nomeados", "valores oficiais Out/26", "sortimento_restrito e substituicao como tabelas", "regra de imutabilidade e versão nova", "pendente_de por parâmetro"]
+  }
 }

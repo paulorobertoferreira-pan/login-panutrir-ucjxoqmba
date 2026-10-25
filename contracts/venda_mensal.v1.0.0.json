@@ -1,24 +1,126 @@
 {
-  "contrato": "venda_mensal",
-  "versao": "1.0.0",
-  "descricao": "Saída da carga agregada: uma linha por mês × cliente × SKU (SPEC-1-002).",
-  "origem": "M-02, M-05; SPEC-1-002",
-  "atualizado_em": "2026-10-24",
-  "chave": ["mes", "cod_cliente", "cod_sku"],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "panutrir/contracts/venda_mensal/1.0.0",
+  "title": "venda_mensal — agregado mensal Cliente × SKU (Panutrir)",
+  "description": "Contrato da saída da carga (SPEC-1-002 / T2.1c). Uma linha por mês × cod_cliente × cod_sku, somando TODOS os tipos da origem. É a única fonte do motor da Meta (SPEC-1-005).",
+  "version": "1.0.0",
+  "origem": "contracts/vendas.v2.0.0.json",
+  "granularidade": ["mes", "cod_cliente", "cod_sku"],
   "colunas": [
-    {"nome": "mes", "tipo": "date", "regra": "primeiro dia do mês; constraint impede dia solto"},
-    {"nome": "cod_cliente", "tipo": "integer", "regra": "> 0 (V-02)"},
-    {"nome": "cod_sku", "tipo": "integer", "regra": "> 0"},
-    {"nome": "vlritens", "tipo": "numeric(18,2)", "regra": "soma de TODOS os tipos; arredondado a 2 casas na leitura (achado a6)"},
-    {"nome": "vlrdesc", "tipo": "numeric(18,2)", "regra": "soma de TODOS os tipos; arredondado a 2 casas na leitura"},
-    {"nome": "vlrtroca", "tipo": "numeric(18,2)", "regra": "soma de TODOS os tipos; arredondado a 2 casas na leitura"},
-    {"nome": "qtdade", "tipo": "numeric(18,3)", "regra": "soma de TODOS os tipos"},
-    {"nome": "venda_bruta", "tipo": "numeric(18,2)", "regra": "coluna gerada = vlritens"},
-    {"nome": "venda_liquida", "tipo": "numeric(18,2)", "regra": "coluna gerada = vlritens - vlrdesc - vlrtroca (M-02); pode ser negativa (estorno)"},
-    {"nome": "carga_id", "tipo": "uuid", "regra": "rastreabilidade para carga_registro"}
+    {
+      "nome": "mes",
+      "tipo": "date",
+      "formato": "YYYY-MM",
+      "obrigatorio": true,
+      "descricao": "Mês de competência."
+    },
+    {
+      "nome": "cod_cliente",
+      "tipo": "integer",
+      "obrigatorio": true,
+      "min": 1,
+      "origem": "vendas.codcli",
+      "descricao": "Código do cliente (M-04 usa este código para achar a estrutura atual)."
+    },
+    {
+      "nome": "cod_sku",
+      "tipo": "integer",
+      "obrigatorio": true,
+      "min": 1,
+      "origem": "vendas.codpro",
+      "descricao": "Código do produto."
+    },
+    {
+      "nome": "vlritens",
+      "tipo": "decimal",
+      "scale": 2,
+      "min": 0,
+      "obrigatorio": true,
+      "descricao": "Soma de Soma de vlritens no mês/cliente/SKU (todos os tipos)."
+    },
+    {
+      "nome": "vlrdesc",
+      "tipo": "decimal",
+      "scale": 2,
+      "min": 0,
+      "obrigatorio": true,
+      "descricao": "Soma de Soma de vlrdesc no mês/cliente/SKU."
+    },
+    {
+      "nome": "vlrtroca",
+      "tipo": "decimal",
+      "scale": 2,
+      "min": 0,
+      "obrigatorio": true,
+      "descricao": "Soma de Soma de vlrtroca no mês/cliente/SKU — inclui Troca, Devoluções Diversas, Qualidade, Falta de Produtos, Divergências e Fora do Padrão."
+    },
+    {
+      "nome": "venda_bruta",
+      "tipo": "decimal",
+      "scale": 2,
+      "calculado": "vlritens",
+      "obrigatorio": true,
+      "descricao": "Venda bruta (M-02). É a métrica de elegibilidade da M-05."
+    },
+    {
+      "nome": "venda_liquida",
+      "tipo": "decimal",
+      "scale": 2,
+      "calculado": "vlritens - vlrdesc - vlrtroca",
+      "obrigatorio": true,
+      "descricao": "Venda líquida (M-02). Pode ser negativa — não truncar em zero.",
+      "invariante": "venda_liquida = venda_bruta - vlrdesc - vlrtroca"
+    },
+    {
+      "nome": "qtdade",
+      "tipo": "decimal",
+      "scale": 0,
+      "min": 0,
+      "obrigatorio": true,
+      "descricao": "Soma de Soma de qtde. Não entra no motor de meta (que é em R$), fica para conferência."
+    }
   ],
-  "garantias": {
-    "CA-1-05": "chave única (mes, cod_cliente, cod_sku) + carga apaga e reinsere o mês numa única transação",
-    "CA-1-06": "cada carga grava linha em carga_registro com hash, contagens, totais e rejeições"
+  "chave_unica": ["mes", "cod_cliente", "cod_sku"],
+  "regras": [
+    {
+      "id": "VM-01",
+      "regra": "agregação soma TODOS os tipos do mês; não filtrar por tipo",
+      "prova": "cliente/SKU com Venda 1.000 e Troca 200 tem vlritens=1.000, vlrtroca=200 e venda_liquida=800"
+    },
+    {
+      "id": "VM-02",
+      "regra": "idempotência por mês: recarregar um mês substitui só aquele mês, dentro de uma transação",
+      "prova": "carregar Set/26 duas vezes mantém 1 linha por chave e o mesmo total"
+    },
+    {
+      "id": "VM-03",
+      "regra": "Panettone NÃO é excluído na carga (M-03 é regra do motor, SPEC-1-005), para a carga ficar fiel à fonte",
+      "prova": "linhas de Panettone de 2024 estão em venda_mensal"
+    },
+    {
+      "id": "VM-04",
+      "regra": "Σ venda_mensal por mês = Σ da origem por mês, com tolerância de R$ 0,01 (CA-1-04)",
+      "prova": "tabela mês × total origem × total banco × diferença"
+    },
+    {
+      "id": "VM-05",
+      "regra": "mensalidade: uma linha por (mes, cod_cliente, cod_sku); nada de duplicata por tipo",
+      "prova": "count(*) = count(distinct (mes,cod_cliente,cod_sku))"
+    }
+  ],
+  "janela_minima": {
+    "de": "2024-10",
+    "ate": "2026-09",
+    "meses": 24,
+    "observacao": "atendida pelos 3 arquivos reais: 2024 tem de Jan a Dez, 2025 completo, 2026 até Set"
+  },
+  "baseline_conferido_em": "2026-10-24",
+  "baseline_totais": {
+    "fonte": "3 congeladas reais (2024, 2025, 2026), somente leitura",
+    "meses_com_dados": 24,
+    "vlritens": "298986591.30",
+    "vlrdesc": "2770986.55",
+    "vlrtroca": "17805303.30",
+    "venda_liquida": "278410301.45"
   }
 }

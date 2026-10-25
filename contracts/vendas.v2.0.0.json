@@ -1,0 +1,312 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "panutrir/contracts/vendas/2.0.0",
+  "title": "vendas — congeladas mensais de venda (Panutrir)",
+  "description": "Contrato de origem das congeladas exportadas do BI. Uma linha por mês × empresa × tipo × cliente × SKU (agregado). A T2.1c revisa a v1.1.0 contra o cabeçalho real: 22 colunas em 2026, 20 em 2024/2025 (sem codcli_sap e codpro_sap). Fonte: SPEC-1-002 (EMENDA 02/2026) e metodologia Out/26 M-02/M-05.",
+  "version": "2.0.0",
+  "metodologia": {
+    "M-02": "Venda Líquida = vlritens − vlrdesc − vlrtroca",
+    "M-05": "Elegibilidade Cliente × SKU usa venda bruta positiva em Jul–Set/26"
+  },
+  "tipo": "csv",
+  "encoding": "UTF-8",
+  "delimitador": ",",
+  "cabecalho_obrigatorio": true,
+  "linhas_de_rodape": [
+    "Totais"
+  ],
+  "colunas": [
+    {
+      "nome": "mesano: Mes",
+      "nome_origem": "mesano: Mês",
+      "alias": [
+        "mesano: Mês",
+        "mesano: Mes"
+      ],
+      "tipo": "date",
+      "formato": "YYYY-MM",
+      "obrigatorio": true,
+      "descricao": "Mês de competência. Na exportação vem como data no primeiro dia do mês.",
+      "normalizacao": "primeiros 7 caracteres (YYYY-MM); rejeita data inválida",
+      "exemplo": "2026-07"
+    },
+    {
+      "nome": "id_empresa",
+      "tipo": "integer",
+      "obrigatorio": true,
+      "min": 1,
+      "descricao": "Identificador da empresa no BI. Não é usado na chave do motor.",
+      "observacao": "vazio em 0,1% (2024) e 0,9% (2026) da amostra — aceitar nulo, a chave não depende dele"
+    },
+    {
+      "nome": "tipo",
+      "tipo": "string",
+      "obrigatorio": true,
+      "enum": [
+        "Venda",
+        "Troca",
+        "Devoluções Diversas",
+        "Bonificação",
+        "Qualidade",
+        "Falta de Produtos",
+        "Divergências",
+        "Fora do Padrão"
+      ],
+      "descricao": "Natureza do lançamento. CRÍTICO: vlritens só é preenchido em 'Venda' e 'Bonificação'; vlrtroca só é preenchido quando o tipo NÃO é 'Venda'.",
+      "regra_de_ouro": "A agregação mensal SOMA todos os tipos. Nunca filtrar tipo='Venda': isso descartaria as linhas de troca e inflaria a venda líquida (R$ 7,9 M em 2026).",
+      "valores_nao_previstos": "tratar como erro de contrato e listar no registro de carga (não descartar em silêncio)"
+    },
+    {
+      "nome": "regiao",
+      "tipo": "string",
+      "obrigatorio": false,
+      "maxLength": 40,
+      "descricao": "Região comercial do BI. Informativo."
+    },
+    {
+      "nome": "regional",
+      "tipo": "string",
+      "obrigatorio": false,
+      "maxLength": 40,
+      "descricao": "Regional. Informativo (não é a estrutura comercial do M-04).",
+      "observacao": "vazio em 1,1% da amostra de 2026"
+    },
+    {
+      "nome": "cd_resp",
+      "tipo": "string",
+      "obrigatorio": false,
+      "maxLength": 40,
+      "descricao": "Centro de distribuição responsável. Informativo."
+    },
+    {
+      "nome": "codrede",
+      "tipo": "integer",
+      "obrigatorio": false,
+      "descricao": "Código da rede. Vazio quando o cliente é avulso.",
+      "observacao": "vazio em ~28% das linhas — esperado, não é erro"
+    },
+    {
+      "nome": "rede",
+      "tipo": "string",
+      "obrigatorio": false,
+      "maxLength": 40,
+      "descricao": "Nome da rede (ex.: GRUPO ASSAI, GRUPO CARREFOUR, GRUPO MAX ATACADO - MUFFATO). Vazio ou 'Clientes' quando avulso.",
+      "observacao": "usada na M-06 (sortimento Assaí SP) e na M-12 (identificação da rede)"
+    },
+    {
+      "nome": "cidade",
+      "tipo": "string",
+      "obrigatorio": false,
+      "maxLength": 40,
+      "descricao": "Município do cliente."
+    },
+    {
+      "nome": "uf",
+      "tipo": "string",
+      "obrigatorio": true,
+      "pattern": "^[A-Z]{2}$",
+      "descricao": "Unidade federativa. Usada junto com a rede na M-06.",
+      "exemplo": "SP"
+    },
+    {
+      "nome": "codcli",
+      "tipo": "integer",
+      "obrigatorio": true,
+      "min": 1,
+      "descricao": "Código do cliente. Componente da chave mês × cliente × SKU.",
+      "valores_invalidos": "nulo, vazio ou <= 0 → linha rejeitada e contada no registro de carga"
+    },
+    {
+      "nome": "codcli_sap",
+      "tipo": "string",
+      "obrigatorio": false,
+      "desde_versao_arquivo": "2026",
+      "descricao": "Código do cliente no SAP. Só existe nos arquivos a partir de 2026.",
+      "observacao": "coluna ausente nos arquivos de 2024 e 2025 — o contrato aceita as duas versões"
+    },
+    {
+      "nome": "fantasia",
+      "tipo": "string",
+      "obrigatorio": false,
+      "maxLength": 80,
+      "descricao": "Nome fantasia do cliente."
+    },
+    {
+      "nome": "codpro",
+      "tipo": "integer",
+      "obrigatorio": true,
+      "min": 1,
+      "descricao": "Código do produto/SKU. Componente da chave mês × cliente × SKU.",
+      "valores_invalidos": "nulo, vazio ou <= 0 → linha rejeitada e contada no registro de carga"
+    },
+    {
+      "nome": "codpro_sap",
+      "tipo": "string",
+      "obrigatorio": false,
+      "desde_versao_arquivo": "2026",
+      "descricao": "Código do produto no SAP. Só existe nos arquivos a partir de 2026."
+    },
+    {
+      "nome": "produto",
+      "tipo": "string",
+      "obrigatorio": true,
+      "minLength": 3,
+      "maxLength": 120,
+      "descricao": "Descrição do produto. É por aqui que se identifica Panettone a partir de 2025 (ver observação da coluna linha)."
+    },
+    {
+      "nome": "linha",
+      "tipo": "string",
+      "obrigatorio": true,
+      "enum": [
+        "Branca",
+        "Especiais",
+        "Panetones"
+      ],
+      "descricao": "Linha do produto (M-21 usa Branca × Especiais).",
+      "regra_critica": "A linha 'Panetones' aparece APENAS no arquivo de 2024 (51 linhas). Em 2025 e 2026 a coluna só traz Branca e Especiais — a exclusão de Panettone (M-03) NÃO pode depender só desta coluna: usar também a descrição do produto."
+    },
+    {
+      "nome": "Soma de qtde",
+      "tipo": "decimal",
+      "obrigatorio": true,
+      "scale": 0,
+      "descricao": "Quantidade vendida agregada. Zero nas linhas de troca/devolução.",
+      "valores_negativos": "acompanha o vlritens negativo nos estornos"
+    },
+    {
+      "nome": "Soma de vlritens",
+      "tipo": "decimal",
+      "obrigatorio": true,
+      "scale": 2,
+      "descricao": "Valor bruto do item (venda bruta, M-02). Preenchido em 'Venda' e 'Bonificação'.",
+      "observacao": "vem como inteiro ou decimal na planilha — aceitar ambos",
+      "valores_negativos": "PODE ser negativo: 970 linhas em 2024, 745 em 2025 e 851 em 2026 (0,2%) são estornos de venda (vlritens negativo com qtde negativa). Nunca truncar em zero — somar como está."
+    },
+    {
+      "nome": "Soma de vlrdesc",
+      "tipo": "decimal",
+      "obrigatorio": true,
+      "scale": 2,
+      "descricao": "Valor de desconto. Subtrai da venda líquida (M-02).",
+      "observacao": "veio R$ 0,00 em Set/26 e preenchido nos outros 23 meses — divergência registrada na análise, não bloqueia o contrato"
+    },
+    {
+      "nome": "Soma de qtdetroca",
+      "tipo": "decimal",
+      "obrigatorio": true,
+      "scale": 0,
+      "descricao": "Quantidade trocada. Informativo — a venda líquida usa o valor, não a quantidade."
+    },
+    {
+      "nome": "Soma de vlrtroca",
+      "tipo": "decimal",
+      "obrigatorio": true,
+      "scale": 2,
+      "descricao": "Valor da troca/devolução. Subtrai da venda líquida (M-02).",
+      "regra_critica": "Sempre 0 nas linhas tipo='Venda' e sempre preenchido nas de troca/devolução. Somar os dois lados e descontar uma única vez. Negativo = estorno, não erro.",
+      "valores_negativos": "PODE ser negativo: 404 linhas em 2024, 42 em 2025 e 6 em 2026 — reversão de uma troca anterior. Somar como está."
+    }
+  ],
+  "colunas_calculadas": [
+    {
+      "nome": "venda_bruta",
+      "expr": "Soma de vlritens",
+      "descricao": "Venda bruta (M-02 / conferida pelo G-11)."
+    },
+    {
+      "nome": "venda_liquida",
+      "expr": "Soma de vlritens - Soma de vlrdesc - Soma de vlrtroca",
+      "descricao": "Venda líquida (M-02).",
+      "invariante": "venda_liquida = venda_bruta - vlrdesc - vlrtroca, sempre, inclusive quando negativa"
+    },
+    {
+      "nome": "arredondamento_monetario",
+      "expr": "vlritens, vlrdesc e vlrtroca arredondados a 2 casas (ROUND_HALF_UP) na leitura",
+      "descricao": "Normalizacao obrigatoria contra o ruido de ponto flutuante do BI (achado a6)."
+    }
+  ],
+  "chave_de_agregacao": [
+    "mes",
+    "codcli",
+    "codpro"
+  ],
+  "regras_de_validacao": [
+    {
+      "id": "V-01",
+      "regra": "mesano válido e dentro da janela carregada",
+      "erro": "linha rejeitada, contada por motivo 'data_invalida'"
+    },
+    {
+      "id": "V-02",
+      "regra": "codcli e codpro presentes e > 0",
+      "erro": "linha rejeitada, contada por 'codigo_vazio'"
+    },
+    {
+      "id": "V-03",
+      "regra": "vlritens, vlrdesc e vlrtroca numéricos (negativo é permitido e somado como está — estorno)",
+      "erro": "linha rejeitada, contada por 'valor_nao_numerico'"
+    },
+    {
+      "id": "V-04",
+      "regra": "tipo pertence ao enum",
+      "erro": "linha rejeitada, contada por 'tipo_desconhecido'"
+    },
+    {
+      "id": "V-05",
+      "regra": "linha em que todos os três valores são zero não entra (não altera total, mas suja a contagem de combinações)",
+      "erro": "ignorada e contada por 'linha_sem_valor'"
+    },
+    {
+      "id": "V-06",
+      "regra": "nenhuma linha é descartada em silêncio: toda rejeição entra no registro da carga com motivo",
+      "erro": "—"
+    },
+    {
+      "id": "V-07",
+      "regra": "rejeição NÃO invalida o arquivo nem bloqueia a carga; ela é contada e listada no registro (AGENTS.md)",
+      "erro": "—"
+    },
+    {
+      "id": "V-08",
+      "regra": "fora da janela pedida é filtro, não erro: linha contada como 'fora_da_janela' e o arquivo continua válido",
+      "erro": "—"
+    }
+  ],
+  "compatibilidade": {
+    "versoes_de_arquivo_aceitas": [
+      "2024/2025 (20 colunas)",
+      "2026+ (22 colunas com codcli_sap e codpro_sap)"
+    ],
+    "colunas_opcionais_ausentes": "permitido; o leitor não pode exigir codcli_sap nem codpro_sap",
+    "rejeitar_se": "faltar qualquer coluna marcada obrigatorio=true"
+  },
+  "privacidade": {
+    "dados": "reais de venda — jamais commitar planilha, extrato ou amostra neste repositório (público)",
+    "fixtures": "obrigatoriamente sintéticas"
+  },
+  "migracao_da_v1_1_0": {
+    "de": "1.1.0",
+    "para": "2.0.0",
+    "quebra_compatibilidade": true,
+    "motivo": "nomes e semântica passam a refletir o cabeçalho real das congeladas; entra a regra de agregação por tipo e a coluna calculada venda_liquida",
+    "removido": "campo canal_venda (DIRETO/INDIRETO) — não existe nas congeladas; o canal vem da estrutura comercial (SPEC-1-004), não da venda",
+    "adicionado": [
+      "tipo com regra de ouro",
+      "codcli_sap/codpro_sap opcionais",
+      "venda_liquida calculada",
+      "regras V-01..V-06",
+      "compatibilidade 20/22 colunas"
+    ]
+  },
+  "achados_da_inspecao_real": {
+    "data": "2026-10-24",
+    "arquivos": "2024 (427.788 linhas), 2025 (484.691), 2026 (373.103) — somente leitura",
+    "a1_regra_de_ouro": "vlrtroca é 0 em 100% das linhas tipo=Venda e preenchido nas de troca; vlritens só existe em Venda e Bonificação",
+    "a2_negativos": "existem estornos legítimos (~0,2% das linhas): vlritens negativo com qtde negativa em Venda, e vlrtroca negativo em Troca",
+    "a3_panettone": "a linha 'Panetones' só aparece em 2024; em 2025/2026 usar também a descrição do produto (M-03)",
+    "a4_colunas": "2024/2025 têm 20 colunas; 2026 tem 22 (codcli_sap, codpro_sap)",
+    "a5_tipos": "8 valores de tipo: Venda, Troca, Devoluções Diversas, Bonificação, Qualidade, Falta de Produtos, Divergências, Fora do Padrão",
+    "a6_ponto_flutuante": "O BI exporta valores com lixo de ponto flutuante: 15.899999999999999 em vez de 15,90 (medido: ate 15 casas decimais em 'Soma de vlrtroca', em ~5% das linhas nao vazias). Arredondar a 2 casas na LEITURA e obrigatorio: sem isso a soma acumula ~R$ 0,10 por mes e o CA-1-04 (tolerancia R$ 0,01) nunca fecha. Provado na T2.2: sem arredondar, diferenca de -0,1044 / -0,1932 / -0,0731 por mes; com arredondamento, 0,00 nos tres meses."
+  }
+}
