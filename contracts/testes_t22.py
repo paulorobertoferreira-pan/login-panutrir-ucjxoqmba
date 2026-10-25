@@ -55,7 +55,7 @@ def main() -> int:
         print("\n[NAO VERIFICADO] Falta o driver: pip install psycopg")
         return 2
 
-    from carga_vendas import agregar, carregar
+    from carga_vendas import agregar, carregar, conferir_totais
 
     if not FIXTURE.exists():
         print(f"\n[NAO VERIFICADO] Fixture ausente: {FIXTURE}")
@@ -70,6 +70,7 @@ def main() -> int:
     with psycopg.connect(URL, autocommit=True) as conn:
         cur = conn.cursor()
         cur.execute(f"create schema {schema}")
+        # estrutura mínima equivalente à migration
         cur.execute(f"""
             create table {schema}.venda_mensal (
               venda_mensal_id uuid primary key default gen_random_uuid(),
@@ -90,7 +91,7 @@ def main() -> int:
               rejeicoes jsonb default '{{}}', totais_por_mes jsonb default '{{}}',
               executado_por text not null, iniciado_em timestamptz default now(),
               concluido_em timestamptz, status text default 'em_andamento', erro text);
-      """)
+        """)
 
     try:
         # ---------------------------------------------------------------- RED
@@ -107,6 +108,7 @@ def main() -> int:
                         (f"{mes}-01", cli, sku, a["vlritens"], a["vlrdesc"], a["vlrtroca"], a["qtdade"]))
         with psycopg.connect(URL) as conn:
             n1 = conn.execute(f"select count(*) from {schema}.venda_mensal").fetchone()[0]
+            soma1 = conn.execute(f"select sum(vlritens) from {schema}.venda_mensal").fetchone()[0]
         # segunda rodada SEM apagar o mês: o insert puro duplicaria se não houvesse a chave
         try:
             with psycopg.connect(URL) as conn:
@@ -134,6 +136,9 @@ def main() -> int:
 
         # -------------------------------------------------------------- GREEN
         print("\n[GREEN] a carga do script é idempotente por mês")
+        # a carga real usa o schema public; aqui apontamos search_path para o schema de teste
+        with psycopg.connect(URL, autocommit=True) as conn:
+            conn.execute(f"set search_path to {schema}, public")
 
         def carga(executor="teste", d=None):
             # o schema de teste é passado explicitamente: nada de tocar em public
@@ -168,7 +173,7 @@ def main() -> int:
         dados_ago = dict(dados)
         dados_ago["agg"] = {k: v for k, v in dados["agg"].items() if k[0] == "2026-08"}
         dados_ago["totais_por_mes"] = {k: v for k, v in dados["totais_por_mes"].items() if k == "2026-08"}
-        carga("recarga ago", dados_ago)
+        r3 = carga("recarga ago", dados_ago)
         with psycopg.connect(URL) as conn:
             conn.execute(f"set search_path to {schema}, public")
             depois_jul = conn.execute(
@@ -224,7 +229,7 @@ def main() -> int:
             reg = conn.execute("""select arquivo_hash, linhas_lidas, linhas_agregadas,
                                          linhas_rejeitadas, status, executado_por
                                     from carga_registro order by iniciado_em desc limit 1""").fetchone()
-        checa("REGRESSÃO: registro tem hash sha256", bool(reg[0]) and len(reg[0]) == 64, f"{len(reg[0]) if reg[0] else 0} chars")
+        checa("REGRESSÃO: registro tem hash sha256", reg[0] and len(reg[0]) == 64, f"{len(reg[0]) if reg[0] else 0} chars")
         checa("REGRESSÃO: registro tem contagens", reg[1] > 0 and reg[2] > 0, f"lidas={reg[1]} agregadas={reg[2]}")
         checa("REGRESSÃO: registro termina como concluida", reg[4] == "concluida", str(reg[4]))
         checa("REGRESSÃO: registro guarda quem executou", bool(reg[5]), str(reg[5]))
