@@ -245,6 +245,19 @@ def main() -> int:
         with psycopg.connect(URL, autocommit=True) as conn:
             conn.execute(f"drop schema {schema} cascade")
 
+    # R6 (T2.3): arredondamento monetario e ROUND_HALF_UP, nao o padrao HALF_EVEN do Decimal.
+    # RED: o padrao arredonda 24.645 para 24.64 (par). GREEN: a carga arredonda para 24.65.
+    from decimal import ROUND_HALF_UP as _HU
+    casos_meio = [("24.645", "24.65"), ("243.505", "243.51"), ("54.565", "54.57"),
+                  ("19.845", "19.85"), ("18.185", "18.19"), ("15.899999999999999", "15.90")]
+    red_errado = [v for v, e in casos_meio if str(Decimal(v).quantize(Decimal("0.01"))) != e]
+    checa("REGRESSÃO R6 RED: o padrão HALF_EVEN erra os meios do centavo (prova que o defeito existe)",
+          len(red_errado) == 5, f"{len(red_errado)} de 6 valores errariam com o padrão")
+    green_errado = [v for v, e in casos_meio
+                    if str(Decimal(v).quantize(Decimal("0.01"), rounding=_HU)) != e]
+    checa("REGRESSÃO R6 GREEN: ROUND_HALF_UP acerta todos os casos do meio do centavo",
+          green_errado == [], f"errados={green_errado}")
+
     print("\n".join(passos))
     print("\n" + "=" * 78)
     if falhas:
