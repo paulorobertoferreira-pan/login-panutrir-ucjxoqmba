@@ -10,7 +10,8 @@
 --   responsavel_rotulo ~ '^(Supervisor|Promotor) Sintético [0-9]{2}$'  reais: nomes próprios
 --   unidade_medida NOT NULL in (UN,KG,CX)      a base de produtos não traz unidade
 -- Colunas que a T4.2 exige e não existiam: produtos.ean, produtos.is_panettone (M-03),
--- clientes.canal/rede/uf/supervisor_codigo/promotor_codigo (M-04/M-25).
+-- clientes.canal, clientes.rede, clientes.uf, clientes.supervisor_codigo,
+-- clientes.promotor_codigo (M-04/M-25: estrutura atual; promotor pode ser vazio).
 --
 -- A tabela está vazia (0 linhas), então não há migração de dados — só de formato.
 -- RLS, índices e o EXCLUDE de sobreposição por vigência continuam válidos e não mudam.
