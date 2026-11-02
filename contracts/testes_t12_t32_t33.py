@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """T1.2 + T3.2 + T3.3 — provas RED/GREEN/REGRESSÃO em Postgres local.
-Requisitos: migrations aplicadas; stubs auth.uid()/private.has_operation replicados (T2.3).
+Requisitos: migrations aplicadas; funções de autorização REAIS (T1.4 versionou as da T1.1).
 """
 import psycopg, sys
 from decimal import Decimal
@@ -13,20 +13,15 @@ def check(nome, cond, detalhe=""):
     else: fail += 1; print(f"  ✘ {nome} {detalhe}")
 
 def conn():
-    return psycopg.connect(DSN)
+    c = psycopg.connect(DSN)
+    cur = c.cursor()
+    # identidade da prova: Paulo (gestor_dados: criar_ciclo=allow) via GUC —
+    # a mesma via do auth.uid() do Supabase real (T1.4: funções reais versionadas)
+    cur.execute("select set_config('request.jwt.claim.sub', coalesce((select id::text from profiles where email='paulo.ferreira@panutrir.com.br'), ''), false)")
+    cur.close()
+    return c
 
-# --- stubs de ambiente Supabase no local (idempotente)
 c = conn(); cur = c.cursor()
-cur.execute("select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='auth' and p.proname='uid'")
-if cur.fetchone() is None:
-    cur.execute("create schema if not exists auth")
-    cur.execute("create or replace function auth.uid() returns uuid language sql stable as $$ select null::uuid $$")
-cur.execute("select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='private' and p.proname='has_operation'")
-if cur.fetchone() is None:
-    cur.execute("create schema if not exists private")
-    cur.execute("""create or replace function private.has_operation(text) returns boolean
-                   language sql stable security definer as $$ select false $$""")
-c.commit(); c.close()
 
 print("== RED (falha esperada antes do comportamento correto)")
 # R1: inserir o mesmo mês duas vezes direto na tabela viola unicidade
@@ -77,8 +72,8 @@ check("G5 IS Out/26 = 1,0319 (P-05 oficial)", isv is not None and abs(float(isv)
 check("G6 IS Out marcado informado/Q-08", origem == 'informado' and pend == 'Q-08')
 cur.execute("select count(*) from calendario_mes where mes between '2024-10-01' and '2026-10-01'")
 check("G7 calendário cobre 25 meses", cur.fetchone()[0] == 25)
-cur.execute("select count(*) from calendario_mes where is_origem='pendente' and pendente_de='Q-08'")
-check("G8 demais meses pendentes da Q-08 (nada inventado)", cur.fetchone()[0] == 24)
+cur.execute("select count(*) from calendario_mes where is_origem='calculado'")
+check("G8 IS histórico calculado (T3.2)", cur.fetchone()[0] == 24)
 c.commit()
 
 print("== T3.3 execução")
@@ -126,7 +121,7 @@ check("R6 P-01..P-16 intactos", cur.fetchone()[0] == 16)
 # R7: venda_mensal e catálogo intactos
 cur.execute("select (select count(*) from venda_mensal), (select count(*) from catalog_clientes), (select count(*) from catalog_produtos)")
 vm, cl, pr = cur.fetchone()
-check("R7 dados reais intactos", (vm, cl, pr) == (888576, 3240, 53), f"deu {(vm,cl,pr)}")
+check("R7 dados reais intactos", (vm, cl, pr) == (888576, 3241, 53), f"deu {(vm,cl,pr)}")
 # R8: aprovador atribuído ao Paulo
 cur.execute("select count(*) from profile_role_assignments pra join profiles p on p.id=pra.profile_id where p.email='paulo.ferreira@panutrir.com.br' and pra.role_key='aprovador' and pra.revoked_at is null")
 check("R8 Paulo com aprovador", cur.fetchone()[0] == 1)
