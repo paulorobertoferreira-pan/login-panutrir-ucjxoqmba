@@ -9,7 +9,48 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      controle_gabarito: {
+        Row: {
+          controle_id: string
+          modo: string
+          controle: string
+          gabarito: number
+          medido: number | null
+          diferenca: number | null
+          diferenca_pct: number | null
+          tolerancia: number
+          estado: string
+          referencia_ciclo: string
+          criado_em: string
+        }
+        Insert: {
+          controle_id?: string
+          modo: string
+          controle: string
+          gabarito: number
+          medido?: number | null
+          diferenca?: number | null
+          diferenca_pct?: number | null
+          tolerancia?: number
+          estado: string
+          referencia_ciclo?: string
+          criado_em?: string
+        }
+        Update: {
+          controle_id?: string
+          modo?: string
+          controle?: string
+          gabarito?: number
+          medido?: number | null
+          diferenca?: number | null
+          diferenca_pct?: number | null
+          tolerancia?: number
+          estado?: string
+          referencia_ciclo?: string
+          criado_em?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -111,15 +152,15 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema['Enums']
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
+  EnumName extends DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema['Enums']
+    | { schema: keyof DatabaseWithoutInternals }
+    ? keyof DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
     : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+  ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
     ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
     : never
@@ -128,15 +169,15 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema['CompositeTypes']
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema['CompositeTypes']
+    | { schema: keyof DatabaseWithoutInternals }
+    ? keyof DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+  ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
     ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
     : never
