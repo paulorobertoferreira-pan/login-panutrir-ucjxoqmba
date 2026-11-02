@@ -248,12 +248,12 @@ export default function ConsultaDrillDown() {
   useEffect(() => {
     ;(supabase as unknown as { from: (t: string) => { select: (s: string) => Promise<{ data: unknown }> } })
       .from('catalog_responsaveis')
-      .select('responsavel_codigo, responsavel_nome')
+      .select('responsavel_codigo, responsavel_rotulo')
       .then(({ data }) => {
         if (data) {
           const map: Record<string, string> = {}
-          for (const r of data as Array<{ responsavel_codigo: string; responsavel_nome: string }>)
-            map[r.responsavel_codigo] = r.responsavel_nome
+          for (const r of data as Array<{ responsavel_codigo: string; responsavel_rotulo: string }>)
+            map[r.responsavel_codigo] = r.responsavel_rotulo
           setNomes(map)
         }
       })
