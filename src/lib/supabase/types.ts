@@ -9,6 +9,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      meta_linha: {
+        Row: {
+          meta_linha_id: string
+          referencia_ciclo: string
+          cliente: string
+          sku: string
+          cliente_nome: string | null
+          produto_nome: string | null
+          linha_produto: string | null
+          supervisor: string | null
+          promotor: string | null
+          regime: string
+          meta_original: number
+          gap_linha: number
+          meta_final: number
+          memoria: Json | null
+          criado_em: string
+        }
+        Insert: {
+          meta_linha_id?: string
+          referencia_ciclo?: string
+          cliente: string
+          sku: string
+          cliente_nome?: string | null
+          produto_nome?: string | null
+          linha_produto?: string | null
+          supervisor?: string | null
+          promotor?: string | null
+          regime: string
+          meta_original?: number
+          gap_linha?: number
+          meta_final?: number
+          memoria?: Json | null
+          criado_em?: string
+        }
+        Update: {
+          meta_linha_id?: string
+          referencia_ciclo?: string
+          cliente?: string
+          sku?: string
+          cliente_nome?: string | null
+          produto_nome?: string | null
+          linha_produto?: string | null
+          supervisor?: string | null
+          promotor?: string | null
+          regime?: string
+          meta_original?: number
+          gap_linha?: number
+          meta_final?: number
+          memoria?: Json | null
+          criado_em?: string
+        }
+        Relationships: []
+      }
       controle_gabarito: {
         Row: {
           controle_id: string
@@ -53,7 +107,42 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      vw_meta_supervisor: {
+        Row: {
+          referencia_ciclo: string
+          supervisor: string | null
+          combinacoes: number
+          clientes: number
+          meta_original: number | null
+          gap_linha: number | null
+          meta_final: number | null
+        }
+        Relationships: []
+      }
+      vw_meta_promotor: {
+        Row: {
+          referencia_ciclo: string
+          supervisor: string | null
+          promotor: string | null
+          combinacoes: number
+          clientes: number
+          meta_original: number | null
+          gap_linha: number | null
+          meta_final: number | null
+        }
+        Relationships: []
+      }
+      vw_meta_regime: {
+        Row: {
+          referencia_ciclo: string
+          regime: string
+          combinacoes: number
+          meta_original: number | null
+          gap_linha: number | null
+          meta_final: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
@@ -148,39 +237,10 @@ export type TablesUpdate<
       : never
     : never
 
-export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema['Enums']
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema['Enums']
-    | { schema: keyof DatabaseWithoutInternals }
-    ? keyof DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
-    : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
-    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
-    : never
+export type Enums<T extends keyof DefaultSchema['Enums']> = DefaultSchema['Enums'][T]
 
-export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema['CompositeTypes']
-    | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema['CompositeTypes']
-    | { schema: keyof DatabaseWithoutInternals }
-    ? keyof DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
-    : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
-    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
-    : never
+export type CompositeTypes<T extends keyof DefaultSchema['CompositeTypes']> =
+  DefaultSchema['CompositeTypes'][T]
 
 export const Constants = {
   public: {
