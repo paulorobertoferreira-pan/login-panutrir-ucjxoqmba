@@ -87,7 +87,7 @@ export default function Index() {
 
   const handleFillDemo = () => {
     setEmail('paulo.ferreira@panutrir.com.br')
-    setPassword('Skip@Pass')
+    setPassword('V8kR3mQ2wLpX7nZt9sJd')
     setEmailTouched(true)
     setPasswordTouched(true)
     setEmailError('')
@@ -308,7 +308,7 @@ export default function Index() {
                   Acesso de teste interno
                 </p>
                 <p className="text-xs text-[#7A6A5A] font-mono truncate mt-0.5">
-                  paulo.ferreira@panutrir.com.br • Skip@Pass
+                  paulo.ferreira@panutrir.com.br • V8kR3mQ2wLpX7nZt9sJd
                 </p>
               </div>
               <button
