@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Mail, ArrowLeft, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Mail, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { toast } from '@/hooks/use-toast'
 
