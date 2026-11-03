@@ -2,6 +2,7 @@
   "_versions": {
     "t23-carga": 3,
     "t73-carga": 3,
-    "t73-config": 3
+    "t73-config": 3,
+    "fix-user-password": 1
   }
 }

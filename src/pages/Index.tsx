@@ -87,7 +87,7 @@ export default function Index() {
 
   const handleFillDemo = () => {
     setEmail('paulo.ferreira@panutrir.com.br')
-    setPassword('Ydh9NZ4LPpupaeo0k6RG')
+    setPassword('Skip@Pass')
     setEmailTouched(true)
     setPasswordTouched(true)
     setEmailError('')
@@ -136,7 +136,7 @@ export default function Index() {
       {/* Painel Esquerdo - Identidade */}
       <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden">
         <img
-          src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=1600&q=80"
+          src="https://img.usecurling.com/p/1600/1200?q=artisan+bread"
           alt="Pães artesanais Panutrir"
           className="absolute inset-0 w-full h-full object-cover"
         />
@@ -263,11 +263,7 @@ export default function Index() {
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7A6A5A] hover:text-[#2C1E12]"
                   tabIndex={-1}
                 >
-                  {showPassword ? (
-                    <EyeOff className="w-4 h-4" />
-                  ) : (
-                    <Eye className="w-4 h-4" />
-                  )}
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
               {passwordError && (
@@ -312,7 +308,7 @@ export default function Index() {
                   Acesso de teste interno
                 </p>
                 <p className="text-xs text-[#7A6A5A] font-mono truncate mt-0.5">
-                  paulo.ferreira@panutrir.com.br • Ydh9NZ4LPpupaeo0k6RG
+                  paulo.ferreira@panutrir.com.br • Skip@Pass
                 </p>
               </div>
               <button

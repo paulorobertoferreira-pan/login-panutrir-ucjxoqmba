@@ -15,7 +15,14 @@ import { supabase } from '@/lib/supabase/client'
 import { PanutrirLogo } from '@/components/PanutrirLogo'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
 interface AggRow {
   supervisor?: string | null
@@ -90,7 +97,9 @@ function fmtBRL(v: number | string | null | undefined) {
   return v == null ? '—' : Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 function fmtNum(v: unknown, dec = 2) {
-  return v == null || v === '' ? '—' : Number(v).toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec })
+  return v == null || v === ''
+    ? '—'
+    : Number(v).toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec })
 }
 
 function MemoriaPanel({ linha, onClose }: { linha: LinhaRow; onClose: () => void }) {
@@ -102,7 +111,8 @@ function MemoriaPanel({ linha, onClose }: { linha: LinhaRow; onClose: () => void
           <div>
             <CardTitle className="text-base font-serif flex items-center gap-2">
               <Calculator className="w-4 h-4 text-[#D99A2B]" />
-              Memória de cálculo — {linha.cliente_nome ?? linha.cliente} · {linha.produto_nome ?? linha.sku}
+              Memória de cálculo — {linha.cliente_nome ?? linha.cliente} ·{' '}
+              {linha.produto_nome ?? linha.sku}
             </CardTitle>
             <CardDescription className="text-xs">
               Cliente {linha.cliente} × SKU {linha.sku} · Linha {linha.linha_produto ?? '—'}
@@ -133,22 +143,32 @@ function MemoriaPanel({ linha, onClose }: { linha: LinhaRow; onClose: () => void
             {CAMPOS_MEMORIA.filter(([k]) => m[k] != null).map(([k, label, fmt]) => (
               <TableRow key={k} className="border-[#E5D9C8]">
                 <TableCell className="text-xs text-[#7A6A5A]">{label}</TableCell>
-                <TableCell className="text-right font-mono text-xs text-[#2C1E12]">{fmt(m[k])}</TableCell>
+                <TableCell className="text-right font-mono text-xs text-[#2C1E12]">
+                  {fmt(m[k])}
+                </TableCell>
               </TableRow>
             ))}
             <TableRow className="border-[#E5D9C8] bg-[#FAF6EF]/60">
               <TableCell className="text-xs font-semibold text-[#2C1E12]">Meta Original</TableCell>
-              <TableCell className="text-right font-mono text-xs font-semibold">{fmtBRL(linha.meta_original)}</TableCell>
+              <TableCell className="text-right font-mono text-xs font-semibold">
+                {fmtBRL(linha.meta_original)}
+              </TableCell>
             </TableRow>
             <TableRow className="border-[#E5D9C8]">
               <TableCell className="text-xs text-[#7A6A5A]">
                 GAP da linha {m.via_gap ? `— ${String(m.via_gap)}` : ''}
               </TableCell>
-              <TableCell className="text-right font-mono text-xs">{fmtBRL(linha.gap_linha)}</TableCell>
+              <TableCell className="text-right font-mono text-xs">
+                {fmtBRL(linha.gap_linha)}
+              </TableCell>
             </TableRow>
             <TableRow className="border-[#E5D9C8] bg-[#D99A2B]/10">
-              <TableCell className="text-xs font-bold text-[#2C1E12]">Meta Final = Original + GAP</TableCell>
-              <TableCell className="text-right font-mono text-xs font-bold">{fmtBRL(linha.meta_final)}</TableCell>
+              <TableCell className="text-xs font-bold text-[#2C1E12]">
+                Meta Final = Original + GAP
+              </TableCell>
+              <TableCell className="text-right font-mono text-xs font-bold">
+                {fmtBRL(linha.meta_final)}
+              </TableCell>
             </TableRow>
           </TableBody>
         </Table>
@@ -190,7 +210,9 @@ export default function ConsultaDrillDown() {
             .order('regime'),
           supabase
             .from('vw_meta_supervisor')
-            .select('supervisor, n:combinacoes, c:clientes, o:meta_original, g:gap_linha, f:meta_final')
+            .select(
+              'supervisor, n:combinacoes, c:clientes, o:meta_original, g:gap_linha, f:meta_final',
+            )
             .eq('referencia_ciclo', '2026-10')
             .order('meta_final', { ascending: false }),
         ])
@@ -246,7 +268,11 @@ export default function ConsultaDrillDown() {
 
   // Nomes dos responsáveis (melhor esforço — se a leitura falhar, ficam os códigos)
   useEffect(() => {
-    ;(supabase as unknown as { from: (t: string) => { select: (s: string) => Promise<{ data: unknown }> } })
+    ;(
+      supabase as unknown as {
+        from: (t: string) => { select: (s: string) => Promise<{ data: unknown }> }
+      }
+    )
       .from('catalog_responsaveis')
       .select('responsavel_codigo, responsavel_rotulo')
       .then(({ data }) => {
@@ -279,7 +305,10 @@ export default function ConsultaDrillDown() {
   const userEmail = user?.email || session?.user?.email || 'colaborador@panutrir.com.br'
   const userName =
     user?.user_metadata?.name ||
-    userEmail.split('@')[0].replace('.', ' ').replace(/\b\w/g, (l) => l.toUpperCase())
+    userEmail
+      .split('@')[0]
+      .replace('.', ' ')
+      .replace(/\b\w/g, (l) => l.toUpperCase())
 
   const nomeResp = (codigo: string | null | undefined) =>
     codigo ? (nomes[codigo] ? `${nomes[codigo]} (${codigo})` : `Responsável ${codigo}`) : '—'
@@ -402,19 +431,27 @@ export default function ConsultaDrillDown() {
         {nivel === 'empresa' && totais && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Card className="border-[#E5D9C8] bg-white shadow-sm p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#7A6A5A]">Meta Original</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#7A6A5A]">
+                Meta Original
+              </p>
               <p className="font-serif text-lg font-bold">{fmtBRL(totais.o)}</p>
             </Card>
             <Card className="border-[#E5D9C8] bg-white shadow-sm p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#7A6A5A]">GAP alocado</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#7A6A5A]">
+                GAP alocado
+              </p>
               <p className="font-serif text-lg font-bold">{fmtBRL(totais.g)}</p>
             </Card>
             <Card className="border-[#E5D9C8] bg-white shadow-sm p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#7A6A5A]">Meta Final</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#7A6A5A]">
+                Meta Final
+              </p>
               <p className="font-serif text-lg font-bold">{fmtBRL(totais.f)}</p>
             </Card>
             <Card className="border-[#E5D9C8] bg-white shadow-sm p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#7A6A5A]">Combinações</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#7A6A5A]">
+                Combinações
+              </p>
               <p className="font-serif text-lg font-bold">{fmtNum(totais.n, 0)}</p>
             </Card>
           </div>
@@ -470,15 +507,28 @@ export default function ConsultaDrillDown() {
                           <TableRow
                             key={`${codigo ?? 'sem'}-${i}`}
                             className="border-[#E5D9C8] cursor-pointer hover:bg-[#FAF6EF]/60"
-                            onClick={() => codigo && (nivel === 'empresa' ? irParaSupervisor(codigo) : irParaPromotor(codigo))}
+                            onClick={() =>
+                              codigo &&
+                              (nivel === 'empresa'
+                                ? irParaSupervisor(codigo)
+                                : irParaPromotor(codigo))
+                            }
                           >
                             <TableCell className="text-xs font-semibold">
                               {nivel === 'empresa' ? nomeResp(r.supervisor) : nomeResp(r.promotor)}
                             </TableCell>
-                            <TableCell className="text-right font-mono text-xs">{fmtNum(r.n, 0)}</TableCell>
-                            <TableCell className="text-right font-mono text-xs">{fmtBRL(r.o)}</TableCell>
-                            <TableCell className="text-right font-mono text-xs">{fmtBRL(r.g)}</TableCell>
-                            <TableCell className="text-right font-mono text-xs font-semibold">{fmtBRL(r.f)}</TableCell>
+                            <TableCell className="text-right font-mono text-xs">
+                              {fmtNum(r.n, 0)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-xs">
+                              {fmtBRL(r.o)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-xs">
+                              {fmtBRL(r.g)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-xs font-semibold">
+                              {fmtBRL(r.f)}
+                            </TableCell>
                             <TableCell className="text-center">
                               <ChevronRight className="w-4 h-4 text-[#D99A2B] inline" />
                             </TableCell>
@@ -492,9 +542,15 @@ export default function ConsultaDrillDown() {
                           const t = totAgg(aggs)
                           return (
                             <>
-                              <TableCell className="text-right font-mono text-xs font-bold">{fmtBRL(t.o)}</TableCell>
-                              <TableCell className="text-right font-mono text-xs font-bold">{fmtBRL(t.g)}</TableCell>
-                              <TableCell className="text-right font-mono text-xs font-bold">{fmtBRL(t.f)}</TableCell>
+                              <TableCell className="text-right font-mono text-xs font-bold">
+                                {fmtBRL(t.o)}
+                              </TableCell>
+                              <TableCell className="text-right font-mono text-xs font-bold">
+                                {fmtBRL(t.g)}
+                              </TableCell>
+                              <TableCell className="text-right font-mono text-xs font-bold">
+                                {fmtBRL(t.f)}
+                              </TableCell>
                             </>
                           )
                         })()}
@@ -511,7 +567,8 @@ export default function ConsultaDrillDown() {
               <Card className="border-[#E5D9C8] bg-white shadow-sm">
                 <CardContent className="pt-6">
                   <p className="text-xs text-[#7A6A5A] mb-3">
-                    {linhas.length} combinações Cliente × SKU (limite de exibição: 300, ordenadas pela Meta Final)
+                    {linhas.length} combinações Cliente × SKU (limite de exibição: 300, ordenadas
+                    pela Meta Final)
                   </p>
                   <Table>
                     <TableHeader>
@@ -530,7 +587,9 @@ export default function ConsultaDrillDown() {
                         <TableRow
                           key={l.meta_linha_id}
                           className="border-[#E5D9C8] cursor-pointer hover:bg-[#FAF6EF]/60"
-                          onClick={() => setAberta(aberta?.meta_linha_id === l.meta_linha_id ? null : l)}
+                          onClick={() =>
+                            setAberta(aberta?.meta_linha_id === l.meta_linha_id ? null : l)
+                          }
                         >
                           <TableCell className="text-xs">
                             <span className="font-semibold">{l.cliente_nome ?? l.cliente}</span>
@@ -545,11 +604,19 @@ export default function ConsultaDrillDown() {
                               {REGIME_LABEL[l.regime] ?? l.regime}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-right font-mono text-xs">{fmtBRL(l.meta_original)}</TableCell>
                           <TableCell className="text-right font-mono text-xs">
-                            {Number(l.gap_linha) !== 0 ? fmtBRL(l.gap_linha) : <span className="text-[#7A6A5A]">—</span>}
+                            {fmtBRL(l.meta_original)}
                           </TableCell>
-                          <TableCell className="text-right font-mono text-xs font-semibold">{fmtBRL(l.meta_final)}</TableCell>
+                          <TableCell className="text-right font-mono text-xs">
+                            {Number(l.gap_linha) !== 0 ? (
+                              fmtBRL(l.gap_linha)
+                            ) : (
+                              <span className="text-[#7A6A5A]">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-xs font-semibold">
+                            {fmtBRL(l.meta_final)}
+                          </TableCell>
                           <TableCell className="text-center">
                             <Calculator className="w-4 h-4 text-[#D99A2B] inline" />
                           </TableCell>

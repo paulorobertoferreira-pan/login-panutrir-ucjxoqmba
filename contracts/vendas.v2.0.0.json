@@ -12,17 +12,12 @@
   "encoding": "UTF-8",
   "delimitador": ",",
   "cabecalho_obrigatorio": true,
-  "linhas_de_rodape": [
-    "Totais"
-  ],
+  "linhas_de_rodape": ["Totais"],
   "colunas": [
     {
       "nome": "mesano: Mes",
       "nome_origem": "mesano: Mês",
-      "alias": [
-        "mesano: Mês",
-        "mesano: Mes"
-      ],
+      "alias": ["mesano: Mês", "mesano: Mes"],
       "tipo": "date",
       "formato": "YYYY-MM",
       "obrigatorio": true,
@@ -158,11 +153,7 @@
       "nome": "linha",
       "tipo": "string",
       "obrigatorio": true,
-      "enum": [
-        "Branca",
-        "Especiais",
-        "Panetones"
-      ],
+      "enum": ["Branca", "Especiais", "Panetones"],
       "descricao": "Linha do produto (M-21 usa Branca × Especiais).",
       "regra_critica": "A linha 'Panetones' aparece APENAS no arquivo de 2024 (51 linhas). Em 2025 e 2026 a coluna só traz Branca e Especiais — a exclusão de Panettone (M-03) NÃO pode depender só desta coluna: usar também a descrição do produto."
     },
@@ -226,11 +217,7 @@
       "descricao": "Normalizacao obrigatoria contra o ruido de ponto flutuante do BI (achado a6)."
     }
   ],
-  "chave_de_agregacao": [
-    "mes",
-    "codcli",
-    "codpro"
-  ],
+  "chave_de_agregacao": ["mes", "codcli", "codpro"],
   "regras_de_validacao": [
     {
       "id": "V-01",

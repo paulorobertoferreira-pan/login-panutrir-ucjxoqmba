@@ -73,12 +73,12 @@ const NOTA_SEM_MEDIDA: Record<string, string> = {
 }
 
 const fmtBRL = (v: string | number | null) =>
-  v == null
-    ? '—'
-    : Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  v == null ? '—' : Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
 const fmtNum = (v: string | number | null, dec = 0) =>
-  v == null ? '—' : Number(v).toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec })
+  v == null
+    ? '—'
+    : Number(v).toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec })
 
 const fmtPct = (v: string | number | null) =>
   v == null ? '—' : `${(Number(v) * 100).toFixed(2).replace('.', ',')}%`
@@ -166,7 +166,10 @@ export default function PainelControles() {
   const userEmail = user?.email || session?.user?.email || 'colaborador@panutrir.com.br'
   const userName =
     user?.user_metadata?.name ||
-    userEmail.split('@')[0].replace('.', ' ').replace(/\b\w/g, (l) => l.toUpperCase())
+    userEmail
+      .split('@')[0]
+      .replace('.', ' ')
+      .replace(/\b\w/g, (l) => l.toUpperCase())
 
   const tabela = (modo: ControleGabarito['modo']) => {
     const linhas = controles.filter((c) => c.modo === modo)
@@ -187,15 +190,35 @@ export default function PainelControles() {
         </TableHeader>
         <TableBody>
           {linhas.map((c) => {
-            const isValor = ['G-01', 'G-02', 'G-03', 'G-04', 'G-05', 'G-06', 'G-07', 'G-09', 'G-10', 'G-15_valor'].includes(c.controle)
+            const isValor = [
+              'G-01',
+              'G-02',
+              'G-03',
+              'G-04',
+              'G-05',
+              'G-06',
+              'G-07',
+              'G-09',
+              'G-10',
+              'G-15_valor',
+            ].includes(c.controle)
             const isRatio = c.controle === 'G-08'
-            const fmt = (v: string | number | null) => (isRatio ? fmtNum(v, 6) : isValor ? fmtBRL(v) : fmtNum(v))
+            const fmt = (v: string | number | null) =>
+              isRatio ? fmtNum(v, 6) : isValor ? fmtBRL(v) : fmtNum(v)
             return (
               <TableRow key={c.controle_id} className="border-[#E5D9C8]">
-                <TableCell className="font-mono text-xs font-semibold text-[#2C1E12]">{c.controle}</TableCell>
-                <TableCell className="text-xs text-[#7A6A5A]">{DESCRICAO_CONTROLE[c.controle] ?? '—'}</TableCell>
-                <TableCell className="text-right font-mono text-xs text-[#2C1E12]">{fmt(c.gabarito)}</TableCell>
-                <TableCell className="text-right font-mono text-xs text-[#2C1E12]">{fmt(c.medido)}</TableCell>
+                <TableCell className="font-mono text-xs font-semibold text-[#2C1E12]">
+                  {c.controle}
+                </TableCell>
+                <TableCell className="text-xs text-[#7A6A5A]">
+                  {DESCRICAO_CONTROLE[c.controle] ?? '—'}
+                </TableCell>
+                <TableCell className="text-right font-mono text-xs text-[#2C1E12]">
+                  {fmt(c.gabarito)}
+                </TableCell>
+                <TableCell className="text-right font-mono text-xs text-[#2C1E12]">
+                  {fmt(c.medido)}
+                </TableCell>
                 <TableCell className="text-right font-mono text-xs">
                   {c.diferenca != null && Number(c.diferenca) !== 0 ? (
                     <span className={Number(c.diferenca) > 0 ? 'text-[#C44133]' : 'text-[#2E7D32]'}>
@@ -206,7 +229,9 @@ export default function PainelControles() {
                     <span className="text-[#7A6A5A]">—</span>
                   )}
                 </TableCell>
-                <TableCell className="text-right font-mono text-xs text-[#7A6A5A]">{fmtPct(c.tolerancia)}</TableCell>
+                <TableCell className="text-right font-mono text-xs text-[#7A6A5A]">
+                  {fmtPct(c.tolerancia)}
+                </TableCell>
                 <TableCell className="text-center">
                   <EstadoBadge estado={c.estado} />
                   {c.estado === 'DIVERGE' && NOTA_DIVERGENCIA[c.controle] && (
@@ -268,10 +293,11 @@ export default function PainelControles() {
           </div>
           <p className="font-sans text-sm text-[#7A6A5A] max-w-3xl">
             Reconciliação automática contra o gabarito Out/26 (teste T7.1). O modo{' '}
-            <strong className="text-[#2C1E12]">Validação da Regra</strong> confere as medidas provadas
-            das T6.x com o universo do gabarito — prova de que a regra implementada reproduz o modelo
-            do cliente. O modo <strong className="text-[#2C1E12]">Execução</strong> mede o universo
-            provisório do motor (−0,23% + carteiras pós-set/26).
+            <strong className="text-[#2C1E12]">Validação da Regra</strong> confere as medidas
+            provadas das T6.x com o universo do gabarito — prova de que a regra implementada
+            reproduz o modelo do cliente. O modo{' '}
+            <strong className="text-[#2C1E12]">Execução</strong> mede o universo provisório do motor
+            (−0,23% + carteiras pós-set/26).
           </p>
         </div>
 
@@ -291,9 +317,7 @@ export default function PainelControles() {
               <Badge className="bg-[#2E7D32]/10 text-[#2E7D32] border border-[#2E7D32]/30">
                 {rRegra.bate}/{rRegra.total} batem
               </Badge>
-              {rRegra.diverge > 0 && (
-                <Badge variant="destructive">{rRegra.diverge} divergem</Badge>
-              )}
+              {rRegra.diverge > 0 && <Badge variant="destructive">{rRegra.diverge} divergem</Badge>}
               {rRegra.sem > 0 && (
                 <Badge className="bg-[#7A6A5A]/10 text-[#7A6A5A] border border-[#7A6A5A]/30">
                   {rRegra.sem} sem medida
@@ -354,8 +378,8 @@ export default function PainelControles() {
         {/* Rodapé do painel */}
         <div className="flex items-center justify-between text-xs text-[#7A6A5A]">
           <span>
-            Fonte: teste automatizado de reconciliação (T7.1) · Ciclo 2026-10 · Reconciliação linha a
-            linha pendente da Q-21 (planilha do cliente)
+            Fonte: teste automatizado de reconciliação (T7.1) · Ciclo 2026-10 · Reconciliação linha
+            a linha pendente da Q-21 (planilha do cliente)
           </span>
           <button
             onClick={carregar}
