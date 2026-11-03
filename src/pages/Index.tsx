@@ -87,7 +87,7 @@ export default function Index() {
 
   const handleFillDemo = () => {
     setEmail('paulo.ferreira@panutrir.com.br')
-    setPassword('Skip@Pass')
+    setPassword('HrFvYsnnW5Hv4Jqo23Mc')
     setEmailTouched(true)
     setPasswordTouched(true)
     setEmailError('')
@@ -203,7 +203,7 @@ export default function Index() {
             <div className="space-y-2">
               <label
                 htmlFor="email"
-                className="text-sm font-semibold text-[#2C1E12] flex items-center gap-2"
+                className="text-sm font-semibold text-[#2C1E12] flex items-center gap-1"
               >
                 <Mail className="w-4 h-4 text-[#D99A2B]" />
                 E-mail
@@ -231,7 +231,7 @@ export default function Index() {
               <div className="flex items-center justify-between">
                 <label
                   htmlFor="password"
-                  className="text-sm font-semibold text-[#2C1E12] flex items-center gap-2"
+                  className="text-sm font-semibold text-[#2C1E12] flex items-center gap-1"
                 >
                   <Lock className="w-4 h-4 text-[#D99A2B]" />
                   Senha
@@ -308,7 +308,7 @@ export default function Index() {
                   Acesso de teste interno
                 </p>
                 <p className="text-xs text-[#7A6A5A] font-mono truncate mt-0.5">
-                  paulo.ferreira@panutrir.com.br • Skip@Pass
+                  paulo.ferreira@panutrir.com.br • (senha com o Paulo)
                 </p>
               </div>
               <button
