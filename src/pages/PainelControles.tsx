@@ -1,65 +1,89 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { RefreshCw, HelpCircle, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react'
+import {
+  LogOut,
+  Target,
+  ShieldCheck,
+  AlertTriangle,
+  HelpCircle,
+  RefreshCw,
+  CheckCircle2,
+  ClipboardCheck,
+} from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { supabase } from '@/lib/supabase/client'
 import { PanutrirLogo } from '@/components/PanutrirLogo'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import type { Tables } from '@/lib/supabase/types'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
-type ControleGabarito = Tables<'controle_gabarito'>
+interface ControleGabarito {
+  controle_id: string
+  modo: 'VALIDACAO_REGRA' | 'EXECUCAO'
+  controle: string
+  gabarito: string | number
+  medido: string | number | null
+  diferenca: string | number | null
+  diferenca_pct: string | number | null
+  tolerancia: string | number
+  estado: 'BATE' | 'DIVERGE' | 'SEM MEDIDA'
+  referencia_ciclo: string
+}
 
 const DESCRICAO_CONTROLE: Record<string, string> = {
   'G-01': 'Meta Final (M-30)',
   'G-02': 'Σ Meta Original',
   'G-03': 'GAP total',
-  'G-04': 'GAP Diretoria (dado)',
-  'G-05': 'Meta Indireto',
+  'G-04': 'Meta Final Indireto',
+  'G-05': 'Meta Original Indireto',
   'G-06': 'GAP Indireto',
   'G-07': 'GAP Direto',
-  'G-08': 'Share Especial médio',
+  'G-08': 'Média do mix (Q-42)',
   'G-09': 'GAP Branca',
   'G-10': 'GAP Especiais',
-  'G-11': 'Combinações Cliente × SKU',
-  'G-12': 'Introduções',
-  'G-13': 'Introduções com meta zero',
-  'G-14': 'Piso técnico',
-  'G-15_lojas': 'Lojas da substituição Assaí',
+  'G-11': 'Combinações Cliente × SKU (M-05)',
+  'G-12': 'Combinações em introdução (M-12)',
+  'G-13': 'Introdução com último mês = 0 (M-13)',
+  'G-14': 'Combinações com piso técnico (M-14)',
+  'G-15_lojas': 'Lojas com substituição (M-15)',
   'G-15_valor': 'Valor da substituição',
-  'G-16': 'PlufiNut fora do Assaí',
+  'G-16': 'PlufiNut fora Assaí ativas (M-16)',
   'G-17': 'Combinações REVISAR < R$300 (M-26)',
-  'G-18': 'Clientes em auditoria de estrutura',
+  'G-18': 'Clientes sem estrutura válida (M-27)',
 }
 
 const NOTA_DIVERGENCIA: Record<string, string> = {
   'G-03': 'GAP é inverso à Meta Original — converge com D2/D3 (universo)',
-  'G-07': 'GAP Direto é inverso à Meta Original — converge com D2/D3',
+  'G-07': 'GAP Direto é inverso à Meta Original — converge com D2/D3 (universo)',
+  'G-09': 'Mix por linha exige a carteira do gabarito (carteiras mudaram pós-set/26)',
+  'G-10': 'Mix por linha exige a carteira do gabarito (carteiras mudaram pós-set/26)',
 }
 
 const NOTA_SEM_MEDIDA: Record<string, string> = {
-  'G-09': 'Mix por linha exige a carteira do gabarito (shares por promotor)',
-  'G-10': 'Mix por linha exige a carteira do gabarito (shares por promotor)',
+  'G-09': 'Mix real por promotor no universo provisório não reproduz o controle',
+  'G-10': 'Mix real por promotor no universo provisório não reproduz o controle',
 }
 
-function fmtBRL(v: number | string | null | undefined) {
-  return v == null
+const fmtBRL = (v: string | number | null) =>
+  v == null
     ? '—'
     : Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
 
-function fmtNum(v: number | string | null | undefined, dec = 0) {
-  return v == null
-    ? '—'
-    : Number(v).toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec })
-}
+const fmtNum = (v: string | number | null, dec = 0) =>
+  v == null ? '—' : Number(v).toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec })
 
-function fmtPct(v: number | string | null | undefined) {
-  return v == null ? '—' : `${(Number(v) * 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%`
-}
+const fmtPct = (v: string | number | null) =>
+  v == null ? '—' : `${(Number(v) * 100).toFixed(2).replace('.', ',')}%`
 
-function EstadoBadge({ estado }: { estado: string }) {
+function EstadoBadge({ estado }: { estado: ControleGabarito['estado'] }) {
   if (estado === 'BATE')
     return (
       <Badge className="bg-[#2E7D32]/10 text-[#2E7D32] border border-[#2E7D32]/30 hover:bg-[#2E7D32]/15 gap-1">
@@ -69,7 +93,7 @@ function EstadoBadge({ estado }: { estado: string }) {
   if (estado === 'DIVERGE')
     return (
       <Badge className="bg-[#C44133]/10 text-[#C44133] border border-[#C44133]/30 hover:bg-[#C44133]/15 gap-1">
-        <XCircle className="w-3 h-3" /> Diverge
+        <AlertTriangle className="w-3 h-3" /> Diverge
       </Badge>
     )
   return (
@@ -206,6 +230,7 @@ export default function PainelControles() {
 
   return (
     <div className="min-h-screen bg-[#FAF6EF] text-[#2C1E12] flex flex-col font-sans">
+      {/* Barra Superior */}
       <header className="border-b border-[#E5D9C8] bg-white sticky top-0 z-20 shadow-xs">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -223,114 +248,123 @@ export default function PainelControles() {
             <button
               onClick={handleSignOut}
               className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-[#E5D9C8] text-xs font-semibold text-[#7A6A5A] hover:text-[#C44133] hover:border-[#C44133]/40 hover:bg-[#FDE8E6]/40 transition-colors"
+              title="Encerrar sessão"
             >
-              <RefreshCw className="w-3.5 h-3.5" />
+              <LogOut className="w-3.5 h-3.5" />
               <span>Sair</span>
             </button>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6">
+      {/* Conteúdo Principal */}
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-8 animate-fade-in">
         <div className="space-y-2">
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight">
-            Painel de Controles — Ciclo Out/26
-          </h1>
+          <div className="flex items-center gap-2">
+            <ClipboardCheck className="w-6 h-6 text-[#D99A2B]" />
+            <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight">
+              Painel de Controles — Ciclo Out/26
+            </h1>
+          </div>
           <p className="font-sans text-sm text-[#7A6A5A] max-w-3xl">
-            Cada controle do gabarito do cliente ao lado do valor medido no sistema. O modo
-            "Validação da Regra" confere a regra implementada com o universo do gabarito; o modo
-            "Execução" mede o universo provisório em produção.
+            Reconciliação automática contra o gabarito Out/26 (teste T7.1). O modo{' '}
+            <strong className="text-[#2C1E12]">Validação da Regra</strong> confere as medidas provadas
+            das T6.x com o universo do gabarito — prova de que a regra implementada reproduz o modelo
+            do cliente. O modo <strong className="text-[#2C1E12]">Execução</strong> mede o universo
+            provisório do motor (−0,23% + carteiras pós-set/26).
           </p>
         </div>
 
-        {/* Cards de resumo */}
+        {/* Resumo */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Card className="border-[#E5D9C8] bg-white shadow-sm">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-serif">Validação da Regra</CardTitle>
+              <CardTitle className="text-base font-serif flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-[#2E7D32]" />
+                Validação da Regra
+              </CardTitle>
               <CardDescription className="text-xs">
-                A regra implementada reproduz o modelo do gabarito?
+                Universo do gabarito — medidas provadas nas T6.x
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex items-center gap-4">
-              <span className="font-serif text-3xl font-bold text-[#2E7D32]">
-                {rRegra.bate}/{rRegra.total}
-              </span>
-              <div className="flex gap-2">
-                {rRegra.diverge > 0 && (
-                  <Badge className="bg-[#C44133]/10 text-[#C44133] border border-[#C44133]/30">{rRegra.diverge} diverge</Badge>
-                )}
-                {rRegra.sem > 0 && (
-                  <Badge className="bg-[#7A6A5A]/10 text-[#7A6A5A] border border-[#7A6A5A]/30">{rRegra.sem} sem medida</Badge>
-                )}
-              </div>
+            <CardContent className="flex items-center gap-2 flex-wrap">
+              <Badge className="bg-[#2E7D32]/10 text-[#2E7D32] border border-[#2E7D32]/30">
+                {rRegra.bate}/{rRegra.total} batem
+              </Badge>
+              {rRegra.diverge > 0 && (
+                <Badge variant="destructive">{rRegra.diverge} divergem</Badge>
+              )}
+              {rRegra.sem > 0 && (
+                <Badge className="bg-[#7A6A5A]/10 text-[#7A6A5A] border border-[#7A6A5A]/30">
+                  {rRegra.sem} sem medida
+                </Badge>
+              )}
             </CardContent>
           </Card>
-
           <Card className="border-[#E5D9C8] bg-white shadow-sm">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-serif">Execução</CardTitle>
+              <CardTitle className="text-base font-serif flex items-center gap-2">
+                <Target className="w-4 h-4 text-[#D99A2B]" />
+                Execução
+              </CardTitle>
               <CardDescription className="text-xs">
-                O universo provisório em produção bate com o gabarito?
+                Universo provisório do motor — resíduo documentado
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex items-center gap-4">
-              <span className="font-serif text-3xl font-bold text-[#2E7D32]">
-                {rExec.bate}/{rExec.total}
-              </span>
-              <div className="flex gap-2">
-                {rExec.diverge > 0 && (
-                  <Badge className="bg-[#C44133]/10 text-[#C44133] border border-[#C44133]/30">{rExec.diverge} diverge</Badge>
-                )}
-                {rExec.sem > 0 && (
-                  <Badge className="bg-[#7A6A5A]/10 text-[#7A6A5A] border border-[#7A6A5A]/30">{rExec.sem} sem medida</Badge>
-                )}
-              </div>
+            <CardContent className="flex items-center gap-2 flex-wrap">
+              <Badge className="bg-[#2E7D32]/10 text-[#2E7D32] border border-[#2E7D32]/30">
+                {rExec.bate}/{rExec.total} batem
+              </Badge>
+              {rExec.diverge > 0 && (
+                <Badge variant="destructive">{rExec.diverge} divergem (esperado)</Badge>
+              )}
+              {rExec.sem > 0 && (
+                <Badge className="bg-[#7A6A5A]/10 text-[#7A6A5A] border border-[#7A6A5A]/30">
+                  {rExec.sem} sem medida
+                </Badge>
+              )}
             </CardContent>
           </Card>
         </div>
 
+        {/* Tabelas por modo */}
+        <Tabs defaultValue="validacao" className="space-y-4">
+          <TabsList className="bg-[#E5D9C8]/50">
+            <TabsTrigger value="validacao">Validação da Regra</TabsTrigger>
+            <TabsTrigger value="execucao">Execução</TabsTrigger>
+          </TabsList>
+          <TabsContent value="validacao">
+            <Card className="border-[#E5D9C8] bg-white shadow-sm">
+              <CardContent className="pt-6">{tabela('VALIDACAO_REGRA')}</CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="execucao">
+            <Card className="border-[#E5D9C8] bg-white shadow-sm">
+              <CardContent className="pt-6">{tabela('EXECUCAO')}</CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
         {erro && (
           <div className="rounded-xl border border-[#C44133]/30 bg-[#FDE8E6]/50 p-4 text-sm text-[#C44133]">
-            Erro ao carregar: {erro}
+            Erro ao carregar controles: {erro}
           </div>
         )}
 
-        <Card className="border-[#E5D9C8] bg-white shadow-sm">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base font-serif">Controles do ciclo</CardTitle>
-                <CardDescription className="text-xs">
-                  Fonte: teste de gabarito da T7.1, gravado na tabela controle_gabarito
-                </CardDescription>
-              </div>
-              <button
-                onClick={carregar}
-                className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-[#E5D9C8] text-xs font-semibold text-[#7A6A5A] hover:bg-[#FAF6EF] transition-colors"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                Atualizar
-              </button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-8">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-[#D99A2B] mb-3">
-                  Modo: Validação da Regra
-                </p>
-                {tabela('VALIDACAO_REGRA')}
-              </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-[#D99A2B] mb-3">
-                  Modo: Execução
-                </p>
-                {tabela('EXECUCAO')}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Rodapé do painel */}
+        <div className="flex items-center justify-between text-xs text-[#7A6A5A]">
+          <span>
+            Fonte: teste automatizado de reconciliação (T7.1) · Ciclo 2026-10 · Reconciliação linha a
+            linha pendente da Q-21 (planilha do cliente)
+          </span>
+          <button
+            onClick={carregar}
+            className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-[#E5D9C8] font-semibold hover:bg-white transition-colors"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Atualizar
+          </button>
+        </div>
       </main>
 
       <footer className="border-t border-[#E5D9C8] py-4 bg-white text-center text-xs text-[#7A6A5A]">
