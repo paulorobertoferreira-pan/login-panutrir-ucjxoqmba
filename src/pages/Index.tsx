@@ -13,7 +13,6 @@ import {
   X,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
-import { supabase } from '@/lib/supabase/client'
 import { PanutrirLogo } from '@/components/PanutrirLogo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
