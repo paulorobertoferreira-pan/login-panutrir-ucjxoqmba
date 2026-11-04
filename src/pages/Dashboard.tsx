@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, Target, ListChecks, Search, Download, Loader2 } from 'lucide-react'
+import { LogOut, Target, ListChecks, Search, Download, Loader2, Settings } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { supabase } from '@/lib/supabase/client'
 import { PanutrirLogo } from '@/components/PanutrirLogo'
@@ -127,8 +127,8 @@ export default function Dashboard() {
             Ciclo Out/26
           </h2>
           <p className="font-sans text-sm text-[#7A6A5A]">
-            Resumo do ciclo de metas de Outubro/2026 — acesse o painel de controles ou a consulta
-            drill-down.
+            Resumo do ciclo de metas de Outubro/2026 — acesse o painel de controles, a consulta
+            drill-down ou os parâmetros.
           </p>
         </div>
 
@@ -189,7 +189,7 @@ export default function Dashboard() {
           </>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <button
             onClick={() => navigate('/controles')}
             className="text-left p-5 rounded-xl bg-white border border-[#E5D9C8] hover:border-[#D99A2B]/50 hover:shadow-sm transition-all group"
@@ -217,6 +217,21 @@ export default function Dashboard() {
                 </p>
               </div>
               <Search className="w-5 h-5 text-[#D99A2B] group-hover:scale-110 transition-transform" />
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate('/parametros')}
+            className="text-left p-5 rounded-xl bg-white border border-[#E5D9C8] hover:border-[#D99A2B]/50 hover:shadow-sm transition-all group"
+          >
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="font-serif text-base font-bold text-[#2C1E12]">Parâmetros</p>
+                <p className="text-xs text-[#7A6A5A]">
+                  P-01..P-16 versionados: editar cria versão nova com autor e motivo
+                </p>
+              </div>
+              <Settings className="w-5 h-5 text-[#D99A2B] group-hover:scale-110 transition-transform" />
             </div>
           </button>
         </div>
