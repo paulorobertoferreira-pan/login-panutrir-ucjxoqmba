@@ -31,6 +31,8 @@ def ctx():
                  '{"P-02": 14000000, "P-06": 21}'))
     v2 = cur.fetchone()[0]
     yield conn, v1, v2, codigos
+    cur.execute("delete from execucao_calculo where parametros_versao_id in (%s,%s) and not exists (select 1 from ciclo_evento ev where ev.execucao_id = execucao_calculo.execucao_id)", (v1, v2))
+    cur.execute("delete from ciclo_meta where parametros_versao_id in (%s,%s) and not exists (select 1 from ciclo_evento ev where ev.ciclo_id = ciclo_meta.ciclo_id)", (v1, v2))
     for t in ("parametros_valor", "sortimento_restrito", "substituicao"):
         cur.execute(f"delete from {t} where versao_id in (%s,%s)", (v1, v2))
     cur.execute("delete from parametros_versao where versao_id in (%s,%s)", (v2, v1))
@@ -66,8 +68,20 @@ def test_execucao_aponta_a_versao_que_a_gerou(ctx):
     conn, v1, v2, codigos = ctx
     cur = conn.cursor()
     cur.execute("select set_config('request.jwt.claim.sub', '', false)")
+    mes_teste = None
+    for a in (2094, 2093, 2092, 2091, 2090, 2089, 2088):
+        for m in range(1, 13):
+            cand = f"{a}-{m:02d}"
+            cur.execute("select 1 from ciclo_meta where mes_referencia=%s", (cand,))
+            if cur.fetchone() is None:
+                mes_teste = cand
+                break
+        if mes_teste:
+            break
+    assert mes_teste, "sem mês sintético livre"
     cur.execute("""insert into ciclo_meta (mes_referencia, status, meta_diretoria, parametros_versao_id, criado_por)
-                   values ('2099-11', 'rascunho', 13000000, %s, gen_random_uuid()) returning ciclo_id""", (v2,))
+                   values (%s, 'rascunho', 13000000, %s, gen_random_uuid())
+                   returning ciclo_id""", (mes_teste, v2))
     ciclo = cur.fetchone()[0]
     cur.execute("""insert into execucao_calculo (ciclo_id, parametros_versao_id, motor_versao, autor, status, finalizado_em, hash_resultado)
                    values (%s, %s, 'teste-t222', 't@t', 'concluida', now(), 'h') returning execucao_id""", (ciclo, v2))
