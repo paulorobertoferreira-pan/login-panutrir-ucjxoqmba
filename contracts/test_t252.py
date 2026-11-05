@@ -74,7 +74,8 @@ def ctx():
         cur.execute("insert into consulta_vinculo (profile_id, papel, carteira) values (%s,%s,%s) on conflict do nothing",
                     (ids[email], papel, carteira))
     yield conn, ids
-    # limpeza (mês sintético sem evento: tudo pode ser apagado)
+    # limpeza (despublicar antes: o congelamento da T2.4.3 protege a publicada)
+    cur.execute("update ciclo_meta set status='rascunho' where ciclo_id=%s", (ciclo,))
     cur.execute("delete from consulta_vinculo where profile_id in (select id from profiles where email like '%@t.local')")
     cur.execute("delete from profiles where email like '%@t.local'")
     cur.execute("delete from auth.users where email like '%@t.local'")
