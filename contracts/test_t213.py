@@ -10,6 +10,10 @@ Provas (banco local, DSN por env PANUTRIR_DSN; fixture sintética da T2.1c):
          totais);
   CANCELAMENTO o operador pode cancelar no passo de confirmação — nada é gravado;
   SIMULAÇÃO --simular mostra o resumo e não grava nada.
+
+ATENÇÃO: a fixture usa os meses 2026-07/08, que TAMBÉM têm dados reais no banco
+de prova. O fixture faz BACKUP das linhas reais antes da carga e RESTAURA no fim
+— o banco de prova nunca perde os dados reais (bug da 1ª versão, corrigido).
 """
 import os
 import psycopg
@@ -24,11 +28,22 @@ MES_FIXTURE = "2026-07"
 
 @pytest.fixture(scope="module")
 def conn():
+    """Backup/restauração das linhas reais dos meses da fixture."""
     c = psycopg.connect(DSN, autocommit=True)
+    cur = c.cursor()
+    backup = {}
+    for mes in ("2026-07", "2026-08"):
+        cur.execute("""select cod_cliente, cod_sku, vlritens, vlrdesc, vlrtroca, qtdade, carga_id
+                         from venda_mensal where mes = %s::date""", (f"{mes}-01",))
+        backup[mes] = cur.fetchall()
     yield c
-    # limpeza: remover o mês da fixture (se gravado) e o registro da carga de teste
     with c.cursor() as cur:
-        cur.execute("delete from venda_mensal where mes = date '2026-07-01'")
+        for mes, linhas in backup.items():
+            cur.execute("delete from venda_mensal where mes = %s::date", (f"{mes}-01",))
+            if linhas:
+                cur.executemany("""insert into venda_mensal (mes, cod_cliente, cod_sku, vlritens, vlrdesc, vlrtroca, qtdade, carga_id)
+                                   values (%s,%s,%s,%s,%s,%s,%s,%s)""",
+                                [(f"{mes}-01",) + tuple(l) for l in linhas])
         cur.execute("delete from carga_registro where arquivo_nome = %s", (FIXTURE.name,))
     c.close()
 
@@ -54,9 +69,13 @@ def test_green_carga_operacional_com_registro_completo(conn):
     assert nome == FIXTURE.name and hash_ and lidas > 0 and agreg > 0
     assert operador.startswith("Ângelo") and status == "concluida"
     assert totais.get(MES_FIXTURE) is not None
-    # o mês da fixture está gravado
+    # o mês da fixture está gravado (idempotente: mesma contagem da fonte)
     depois = _contagem(cur)
-    assert depois[0] > antes[0]
+    from decimal import Decimal
+    from carga_vendas import agregar
+    dados = agregar(FIXTURE)
+    assert depois == (dados["totais_por_mes"][MES_FIXTURE]["linhas"],
+                      Decimal(str(dados["totais_por_mes"][MES_FIXTURE]["vlritens"])))
 
 
 def test_regressao_recarregar_nao_duplica_nem_altera_outros(conn):
@@ -102,7 +121,6 @@ def test_idempotencia_rodar_duas_vezes_termina_igual(conn):
 def test_cancelamento_pelo_operador_nada_gravado(conn):
     from carga_operacional import executar
     cur = conn.cursor()
-    cur.execute("delete from venda_mensal where mes = date '2026-07-01'")
     antes = _contagem(cur)
     r = executar(FIXTURE, "Ângelo (teste automático)", DSN, confirmar=True,
                  entrada=lambda prompt: "n")   # qualquer coisa ≠ ENTER cancela
@@ -113,7 +131,6 @@ def test_cancelamento_pelo_operador_nada_gravado(conn):
 def test_simulacao_nada_gravado(conn):
     from carga_operacional import executar
     cur = conn.cursor()
-    cur.execute("delete from venda_mensal where mes = date '2026-07-01'")
     antes = _contagem(cur)
     r = executar(FIXTURE, "Ângelo (teste automático)", DSN, simular=True)
     assert r["status"] == "simulado"
