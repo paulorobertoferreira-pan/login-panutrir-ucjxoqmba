@@ -27,7 +27,9 @@ def _limpar_sinteticos(cur):
     protege a publicada), apaga linhas, vínculos, usuários e ciclos — exceto o
     que a trilha append-only referencia (ciclo com evento fica)."""
     cur.execute("update ciclo_meta set status='rascunho' where mes_referencia >= '2090-01' and status in ('aprovado','publicado') and not exists (select 1 from ciclo_evento ev where ev.ciclo_id = ciclo_meta.ciclo_id)")
-    cur.execute("delete from meta_linha where referencia_ciclo in (select mes_referencia from ciclo_meta where mes_referencia >= '2090-01')")
+    # apagar linhas só dos ciclos despublicados (o congelamento protege a
+    # publicada; ciclos com evento ficam como estão)
+    cur.execute("delete from meta_linha where referencia_ciclo in (select mes_referencia from ciclo_meta where mes_referencia >= '2090-01' and status = 'rascunho')")
     cur.execute("delete from consulta_vinculo where profile_id in (select id from profiles where email like '%@c.local')")
     cur.execute("delete from profiles where email like '%@c.local'")
     cur.execute("delete from auth.users where email like '%@c.local'")
@@ -36,7 +38,8 @@ def _limpar_sinteticos(cur):
 
 
 def _mes_livre(cur):
-    for a in (2094, 2093, 2092, 2091, 2090, 2089):
+    for a in (2094, 2093, 2092, 2091, 2090, 2089, 2088, 2087, 2086, 2085,
+              2084, 2083, 2082, 2081, 2080):
         for m in range(1, 13):
             cand = f"{a}-{m:02d}"
             cur.execute("select 1 from ciclo_meta where mes_referencia=%s", (cand,))
@@ -50,6 +53,7 @@ def ctx():
     global MES
     conn = psycopg.connect(DSN, autocommit=True)
     cur = conn.cursor()
+    _limpar_sinteticos(cur)
     MES = _mes_livre(cur)
     cur.execute("insert into ciclo_meta (mes_referencia, status, meta_diretoria, parametros_versao_id, criado_por)"
                 " values (%s, 'publicado', 13000000, (select versao_id from parametros_versao where status='oficial' limit 1), gen_random_uuid())"
