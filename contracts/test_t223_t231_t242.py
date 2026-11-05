@@ -4,8 +4,8 @@
   CA-2-11  cenário (simulacao=true) nunca oficial; oficial intacta.
   CA-2-17  aprovar/publicar com trilha append-only; recusas auditadas em
            transação autônoma (sobrevivem ao rollback).
-Meses de teste fixos e exclusivos: 2099-09/10/11/12 (a trilha é append-only,
-eventos não são apagados — cada suíte usa os próprios meses).
+Meses de teste sintéticos (2090-2099); a trilha é append-only — eventos e o que
+eles referenciam (execução, ciclo, versão) NUNCA são apagados.
 """
 import os
 import psycopg
@@ -24,7 +24,7 @@ def _mes_ocupado(cur, mes):
 
 
 def _mes_livre(cur):
-    for a in (2098, 2097, 2096, 2095):
+    for a in (2098, 2097, 2096, 2095, 2094, 2093, 2092, 2091, 2090):
         for m in range(1, 13):
             mes = f"{a}-{m:02d}"
             if not _mes_ocupado(cur, mes):
@@ -39,6 +39,12 @@ def ctx():
     cur.execute("select versao_id from parametros_versao where status='oficial' limit 1")
     versao = cur.fetchone()[0]
     cur.execute("delete from substituicao where rede like 'REDE %'")
+    # limpar ciclos/versões sintéticos SEM evento e SEM execução (rodadas anteriores)
+    cur.execute("delete from execucao_calculo where ciclo_id in (select ciclo_id from ciclo_meta cm where mes_referencia >= '2090-01' and not exists (select 1 from ciclo_evento ev where ev.ciclo_id = cm.ciclo_id))")
+    cur.execute("delete from ciclo_meta cm where mes_referencia >= '2090-01' and not exists (select 1 from ciclo_evento ev where ev.ciclo_id = cm.ciclo_id)")
+    for t in ("parametros_valor", "sortimento_restrito", "substituicao"):
+        cur.execute(f"delete from {t} where versao_id in (select versao_id from parametros_versao where versao_codigo like 'HERDADA-%' and mes_referencia >= '2090-01' and not exists (select 1 from ciclo_meta cm where cm.parametros_versao_id = parametros_versao.versao_id) and not exists (select 1 from execucao_calculo ex where ex.parametros_versao_id = parametros_versao.versao_id))")
+    cur.execute("delete from parametros_versao where versao_codigo like 'HERDADA-%' and mes_referencia >= '2090-01' and not exists (select 1 from ciclo_meta cm where cm.parametros_versao_id = parametros_versao.versao_id) and not exists (select 1 from execucao_calculo ex where ex.parametros_versao_id = parametros_versao.versao_id)")
     # ciclo NOVO por rodada (a trilha é append-only: ciclos com eventos não são
     # apagados; on conflict garante unicidade por rodada via mes_referencia único)
     global MES_A
@@ -49,6 +55,11 @@ def ctx():
     cur.execute("insert into execucao_calculo (ciclo_id, parametros_versao_id, motor_versao, autor, status, finalizado_em, hash_resultado)"
                 " values (%s, %s, 'teste', 't@t', 'concluida', now(), 'h') returning execucao_id", (ciclo, versao))
     execucao = cur.fetchone()[0]
+    # controles do ciclo (a derivação lê controle_gabarito por referencia_ciclo)
+    cur.execute("insert into controle_gabarito (modo, controle, gabarito, medido, diferenca, diferenca_pct, tolerancia, estado, referencia_ciclo)"
+                " select modo, controle, gabarito, medido, diferenca, diferenca_pct, tolerancia, estado, %s"
+                "   from controle_gabarito where referencia_ciclo='2026-10'"
+                " on conflict (modo, controle, referencia_ciclo) do nothing", (MES_A,))
     yield conn, ciclo, execucao, versao
     # a trilha é append-only e referencia a execução (FK): a execução, o ciclo
     # e os eventos ficam no banco — meses 2099-xx são sintéticos, sem conflito.
@@ -170,12 +181,8 @@ def test_31_aprovar_recusa_parametro_nao_confirmado(ctx):
     conn.rollback()
     cur.execute("select count(*) from ciclo_evento where ciclo_id=%s and operacao='recusa_aprovar'", (ciclo2,))
     assert cur.fetchone()[0] >= 1
-    cur.execute("delete from execucao_calculo where execucao_id=%s", (exec2,))
-    cur.execute("delete from ciclo_meta where ciclo_id=%s", (ciclo2,))
-    cur.execute("delete from parametros_valor where versao_id in (select versao_id from parametros_versao where versao_codigo = 'HERDADA-' || %s)", (MES_B,))
-    cur.execute("delete from sortimento_restrito where versao_id in (select versao_id from parametros_versao where versao_codigo = 'HERDADA-' || %s)", (MES_B,))
-    cur.execute("delete from substituicao where versao_id in (select versao_id from parametros_versao where versao_codigo = 'HERDADA-' || %s)", (MES_B,))
-    cur.execute("delete from parametros_versao where versao_codigo = 'HERDADA-' || %s", (MES_B,))
+    # a recusa autônoma criou evento referenciando exec2: exec2/ciclo2/HERDADA
+    # ficam no banco (meses 2099-xx sintéticos; a trilha é append-only)
 
 
 def test_40_publicar_recusa_nao_aprovado_e_audita(ctx):
