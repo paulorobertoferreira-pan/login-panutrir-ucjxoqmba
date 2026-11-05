@@ -69,7 +69,7 @@ def test_execucao_aponta_a_versao_que_a_gerou(ctx):
     cur = conn.cursor()
     cur.execute("select set_config('request.jwt.claim.sub', '', false)")
     mes_teste = None
-    for a in (2094, 2093, 2092, 2091, 2090, 2089, 2088):
+    for a in (2094, 2093, 2092, 2091, 2090, 2089, 2088, 2087, 2086, 2085, 2084, 2083, 2082, 2081, 2080):
         for m in range(1, 13):
             cand = f"{a}-{m:02d}"
             cur.execute("select 1 from ciclo_meta where mes_referencia=%s", (cand,))
