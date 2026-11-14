@@ -96,6 +96,11 @@ def calcular(ciclo: str, dsn: str = DSN) -> dict:
                                            group by 1,2,3""", (ini, fim)).fetchall():
         V1.setdefault((cc, sk), {})[m] = float(a or 0)
         V2.setdefault((cc, sk), {})[m] = float(b or 0)
+
+    # promotor por cliente — decisão do Alex (14/11): cliente SEM promotor
+    # vinculado não entra no cálculo
+    PROMO = {str(r[0]): (r[1] or "") for r in cur.execute(
+        "select cliente_codigo, promotor_codigo from catalog_clientes").fetchall()}
     c.close()
 
     assert len(HIST) == 24, f"esperado 24 meses de histórico, veio {len(HIST)}"
@@ -147,6 +152,8 @@ def calcular(ciclo: str, dsn: str = DSN) -> dict:
 
     universo = []
     for (cc, sk) in V1:
+        if not str(PROMO.get(str(cc), "") or "").strip():
+            continue                # decisão 14/11: sem promotor, fora
         if sk not in CATALOGO:      # D2: SKU sem produto fica FORA
             continue
         if sk in PANETTONE:
