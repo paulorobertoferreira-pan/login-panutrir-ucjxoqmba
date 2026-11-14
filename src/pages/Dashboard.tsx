@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, Target, ListChecks, Search, Download, Loader2, Settings } from 'lucide-react'
+import { LogOut, Target, ListChecks, Search, Download, Loader2, Settings, Upload } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { supabase } from '@/lib/supabase/client'
 import { PanutrirLogo } from '@/components/PanutrirLogo'
@@ -217,6 +217,21 @@ export default function Dashboard() {
                 </p>
               </div>
               <Search className="w-5 h-5 text-[#D99A2B] group-hover:scale-110 transition-transform" />
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate('/importar')}
+            className="text-left p-5 rounded-xl bg-white border border-[#E5D9C8] hover:border-[#D99A2B]/50 hover:shadow-sm transition-all group"
+          >
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="font-serif text-base font-bold text-[#2C1E12]">Importar dados</p>
+                <p className="text-xs text-[#7A6A5A]">
+                  Arraste a planilha do mês fechado — confere antes de gravar
+                </p>
+              </div>
+              <Upload className="w-5 h-5 text-[#D99A2B] group-hover:scale-110 transition-transform" />
             </div>
           </button>
 
