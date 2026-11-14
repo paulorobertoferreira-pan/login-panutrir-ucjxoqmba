@@ -467,6 +467,86 @@ export type Database = {
         }
         Relationships: []
       }
+      ciclo_evento: {
+        Row: {
+          ator: string
+          ciclo_id: string
+          criado_em: string
+          detalhe: Json | null
+          evento_id: string
+          execucao_id: string | null
+          motivo: string
+          operacao: string
+        }
+        Insert: {
+          ator: string
+          ciclo_id: string
+          criado_em?: string
+          detalhe?: Json | null
+          evento_id?: string
+          execucao_id?: string | null
+          motivo: string
+          operacao: string
+        }
+        Update: {
+          ator?: string
+          ciclo_id?: string
+          criado_em?: string
+          detalhe?: Json | null
+          evento_id?: string
+          execucao_id?: string | null
+          motivo?: string
+          operacao?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ciclo_evento_ciclo_id_fkey"
+            columns: ["ciclo_id"]
+            isOneToOne: false
+            referencedRelation: "ciclo_meta"
+            referencedColumns: ["ciclo_id"]
+          },
+          {
+            foreignKeyName: "ciclo_evento_execucao_id_fkey"
+            columns: ["execucao_id"]
+            isOneToOne: false
+            referencedRelation: "execucao_calculo"
+            referencedColumns: ["execucao_id"]
+          },
+        ]
+      }
+      ciclo_marcos: {
+        Row: {
+          aprovado_em: string | null
+          ciclo_id: string
+          executado_em: string | null
+          mes_carregado_em: string | null
+          publicado_em: string | null
+        }
+        Insert: {
+          aprovado_em?: string | null
+          ciclo_id: string
+          executado_em?: string | null
+          mes_carregado_em?: string | null
+          publicado_em?: string | null
+        }
+        Update: {
+          aprovado_em?: string | null
+          ciclo_id?: string
+          executado_em?: string | null
+          mes_carregado_em?: string | null
+          publicado_em?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ciclo_marcos_ciclo_id_fkey"
+            columns: ["ciclo_id"]
+            isOneToOne: true
+            referencedRelation: "ciclo_meta"
+            referencedColumns: ["ciclo_id"]
+          },
+        ]
+      }
       ciclo_meta: {
         Row: {
           atualizado_em: string
@@ -505,6 +585,44 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "parametros_versao"
             referencedColumns: ["versao_id"]
+          },
+        ]
+      }
+      consulta_vinculo: {
+        Row: {
+          carteira: string
+          ciclo_fim: string | null
+          ciclo_inicio: string
+          criado_em: string
+          papel: string
+          profile_id: string
+          vinculo_id: string
+        }
+        Insert: {
+          carteira: string
+          ciclo_fim?: string | null
+          ciclo_inicio?: string
+          criado_em?: string
+          papel: string
+          profile_id: string
+          vinculo_id?: string
+        }
+        Update: {
+          carteira?: string
+          ciclo_fim?: string | null
+          ciclo_inicio?: string
+          criado_em?: string
+          papel?: string
+          profile_id?: string
+          vinculo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consulta_vinculo_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -711,11 +829,15 @@ export type Database = {
       parametros_versao: {
         Row: {
           autor: string
+          candidato_oficial: boolean
           congelada_em: string | null
           criado_em: string
           mes_referencia: string
           motivo: string | null
           origem: string
+          promovido_em: string | null
+          promovido_por: string | null
+          simulacao: boolean
           status: string
           versao_anterior: string | null
           versao_codigo: string
@@ -723,11 +845,15 @@ export type Database = {
         }
         Insert: {
           autor: string
+          candidato_oficial?: boolean
           congelada_em?: string | null
           criado_em?: string
           mes_referencia: string
           motivo?: string | null
           origem?: string
+          promovido_em?: string | null
+          promovido_por?: string | null
+          simulacao?: boolean
           status?: string
           versao_anterior?: string | null
           versao_codigo: string
@@ -735,11 +861,15 @@ export type Database = {
         }
         Update: {
           autor?: string
+          candidato_oficial?: boolean
           congelada_em?: string | null
           criado_em?: string
           mes_referencia?: string
           motivo?: string | null
           origem?: string
+          promovido_em?: string | null
+          promovido_por?: string | null
+          simulacao?: boolean
           status?: string
           versao_anterior?: string | null
           versao_codigo?: string
@@ -824,6 +954,76 @@ export type Database = {
         }
         Relationships: []
       }
+      reconciliacao_item: {
+        Row: {
+          causa: string
+          controle: string
+          declarado_em: string
+          dono: string
+          execucao_id: string
+          modo: string
+          pendencia: string
+        }
+        Insert: {
+          causa: string
+          controle: string
+          declarado_em?: string
+          dono: string
+          execucao_id: string
+          modo: string
+          pendencia: string
+        }
+        Update: {
+          causa?: string
+          controle?: string
+          declarado_em?: string
+          dono?: string
+          execucao_id?: string
+          modo?: string
+          pendencia?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reconciliacao_item_execucao_id_fkey"
+            columns: ["execucao_id"]
+            isOneToOne: false
+            referencedRelation: "execucao_calculo"
+            referencedColumns: ["execucao_id"]
+          },
+        ]
+      }
+      reconciliacao_modo: {
+        Row: {
+          apurado_em: string
+          estado: string
+          execucao_id: string
+          itens_fora: number
+          modo: string
+        }
+        Insert: {
+          apurado_em?: string
+          estado: string
+          execucao_id: string
+          itens_fora?: number
+          modo: string
+        }
+        Update: {
+          apurado_em?: string
+          estado?: string
+          execucao_id?: string
+          itens_fora?: number
+          modo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reconciliacao_modo_execucao_id_fkey"
+            columns: ["execucao_id"]
+            isOneToOne: false
+            referencedRelation: "execucao_calculo"
+            referencedColumns: ["execucao_id"]
+          },
+        ]
+      }
       role_operation_matrix: {
         Row: {
           decision: string
@@ -865,6 +1065,7 @@ export type Database = {
       }
       sortimento_restrito: {
         Row: {
+          ciclo_inicio: string | null
           criado_em: string
           rede: string
           sku_codigo: string
@@ -873,6 +1074,7 @@ export type Database = {
           versao_id: string
         }
         Insert: {
+          ciclo_inicio?: string | null
           criado_em?: string
           rede: string
           sku_codigo: string
@@ -881,6 +1083,7 @@ export type Database = {
           versao_id: string
         }
         Update: {
+          ciclo_inicio?: string | null
           criado_em?: string
           rede?: string
           sku_codigo?: string
@@ -900,6 +1103,7 @@ export type Database = {
       }
       substituicao: {
         Row: {
+          ciclo_inicio: string | null
           criado_em: string
           rede: string
           sku_destino: string
@@ -910,6 +1114,7 @@ export type Database = {
           versao_id: string
         }
         Insert: {
+          ciclo_inicio?: string | null
           criado_em?: string
           rede: string
           sku_destino: string
@@ -920,6 +1125,7 @@ export type Database = {
           versao_id: string
         }
         Update: {
+          ciclo_inicio?: string | null
           criado_em?: string
           rede?: string
           sku_destino?: string
@@ -1045,6 +1251,10 @@ export type Database = {
       }
     }
     Functions: {
+      aprovar_execucao: {
+        Args: { p_ciclo: string; p_execucao: string; p_motivo: string }
+        Returns: string
+      }
       authorize_operation: {
         Args: {
           p_correlation_id?: string
@@ -1054,6 +1264,60 @@ export type Database = {
           p_target_type?: string
         }
         Returns: boolean
+      }
+      carteiras_de: {
+        Args: { p_ciclo?: string; p_papel: string }
+        Returns: string[]
+      }
+      comparar_parametros_cenarios: {
+        Args: { p_versao_a: string; p_versao_b: string }
+        Returns: {
+          parametro: string
+          valor_a: string
+          valor_b: string
+        }[]
+      }
+      consulta_por_perfil: {
+        Args: { p_ciclo: string; p_papel: string }
+        Returns: {
+          cliente: string
+          cliente_nome: string
+          gap_linha: number
+          linha_produto: string
+          meta_final: number
+          meta_original: number
+          produto_nome: string
+          promotor: string
+          regime: string
+          sku: string
+          supervisor: string
+        }[]
+      }
+      consulta_publicada: {
+        Args: { p_ciclo: string; p_papel: string }
+        Returns: {
+          ciclo: string
+          cliente: string
+          memoria: Json
+          meta_final: number
+          regime: string
+          sku: string
+        }[]
+      }
+      criar_cenario_ciclo: {
+        Args: {
+          p_alteracoes?: Json
+          p_autor: string
+          p_ciclo: string
+          p_codigo: string
+          p_motivo: string
+          p_versao_origem: string
+        }
+        Returns: string
+      }
+      criar_ciclo_com_herdanca: {
+        Args: { p_autor: string; p_ciclo: string; p_motivo: string }
+        Returns: string
       }
       criar_ciclo_meta: {
         Args: {
@@ -1079,6 +1343,16 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      criar_versao_cenario: {
+        Args: {
+          p_alteracoes?: Json
+          p_autor: string
+          p_codigo: string
+          p_motivo: string
+          p_versao_origem: string
+        }
+        Returns: string
+      }
       criar_versao_parametros: {
         Args: {
           p_alteracoes?: Json
@@ -1089,16 +1363,165 @@ export type Database = {
         }
         Returns: string
       }
+      criar_versao_parametros_ciclo: {
+        Args: {
+          p_alteracoes?: Json
+          p_autor: string
+          p_ciclo: string
+          p_motivo: string
+          p_novo_codigo: string
+          p_versao_origem: string
+        }
+        Returns: string
+      }
+      dblink: { Args: { "": string }; Returns: Record<string, unknown>[] }
+      dblink_cancel_query: { Args: { "": string }; Returns: string }
+      dblink_close: { Args: { "": string }; Returns: string }
+      dblink_connect: { Args: { "": string }; Returns: string }
+      dblink_connect_u: { Args: { "": string }; Returns: string }
+      dblink_current_query: { Args: never; Returns: string }
+      dblink_disconnect:
+        | { Args: never; Returns: string }
+        | { Args: { "": string }; Returns: string }
+      dblink_error_message: { Args: { "": string }; Returns: string }
+      dblink_exec: { Args: { "": string }; Returns: string }
+      dblink_fdw_validator: {
+        Args: { catalog: unknown; options: string[] }
+        Returns: undefined
+      }
+      dblink_get_connections: { Args: never; Returns: string[] }
+      dblink_get_notify:
+        | { Args: { conname: string }; Returns: Record<string, unknown>[] }
+        | { Args: never; Returns: Record<string, unknown>[] }
+      dblink_get_pkey: {
+        Args: { "": string }
+        Returns: Database["public"]["CompositeTypes"]["dblink_pkey_results"][]
+        SetofOptions: {
+          from: "*"
+          to: "dblink_pkey_results"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      dblink_get_result: {
+        Args: { "": string }
+        Returns: Record<string, unknown>[]
+      }
+      dblink_is_busy: { Args: { "": string }; Returns: number }
+      derivar_reconciliacao: {
+        Args: { p_execucao: string }
+        Returns: undefined
+      }
+      execucao_aprovavel: { Args: { p_execucao: string }; Returns: boolean }
+      extrato_saida: {
+        Args: { p_ciclo: string }
+        Returns: {
+          cliente: string
+          cliente_nome: string
+          gap_linha: number
+          linha_produto: string
+          meta_final: number
+          meta_original: number
+          produto_nome: string
+          promotor: string
+          referencia_ciclo: string
+          regime: string
+          sku: string
+          supervisor: string
+        }[]
+      }
       hash_insumos_execucao: {
         Args: { p_execucao_id: string }
         Returns: string
       }
+      layout_saida: { Args: { p_ciclo: string }; Returns: string }
+      limite_cenarios: {
+        Args: { p_ciclo: string }
+        Returns: {
+          aviso: string
+          limite: number
+        }[]
+      }
+      oficializar_versao_parametros: {
+        Args: { p_motivo: string; p_versao: string }
+        Returns: undefined
+      }
+      pendencias_confirmacao: {
+        Args: { p_execucao: string }
+        Returns: {
+          parametro_codigo: string
+          valor: string
+        }[]
+      }
+      prazo_k2: {
+        Args: { p_ciclo: string }
+        Returns: {
+          dentro_do_prazo: boolean
+          dias_ate_publicacao: number
+          medido: boolean
+          motivo: string
+          prazo_limite: string
+        }[]
+      }
+      promover_cenario: {
+        Args: { p_autor: string; p_motivo: string; p_versao_cenario: string }
+        Returns: string
+      }
+      publicar_ciclo: {
+        Args: { p_ciclo: string; p_motivo: string }
+        Returns: string
+      }
+      registrar_marco: {
+        Args: { p_ciclo: string; p_marco: string }
+        Returns: string
+      }
+      registrar_negativa: {
+        Args: { p_alvo: string; p_operacao: string; p_razao: string }
+        Returns: string
+      }
+      registrar_negativa_parametros: {
+        Args: { p_alvo: string; p_operacao: string; p_razao: string }
+        Returns: string
+      }
+      registrar_recusa: {
+        Args: {
+          p_ciclo: string
+          p_execucao: string
+          p_operacao: string
+          p_razao: string
+        }
+        Returns: string
+      }
+      regras_vigentes: {
+        Args: { p_ciclo: string }
+        Returns: {
+          ciclo_inicio: string | null
+          criado_em: string
+          rede: string
+          sku_destino: string
+          sku_origem: string
+          substituicao_id: string
+          taxa: number
+          uf: string
+          versao_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "substituicao"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      vigencia_valida: { Args: { p_ciclo_inicio: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
     }
     CompositeTypes: {
-      [_ in never]: never
+      dblink_pkey_results: {
+        position: number | null
+        colname: string | null
+      }
     }
   }
 }
