@@ -47,11 +47,11 @@ ACEITO_02_11 = {
 #   699 pares que saíram = todos de cliente sem promotor = R$ 562.757,05;
 #   nenhum par novo, nenhuma linha comum variou.
 ACEITO = {
-    "linhas": 28239,
-    "total": 11116884.63,
-    "regimes": {"REGULAR_24M": 25062, "PISO_MADURO": 215, "INTRODUCAO": 2306,
+    "linhas": 28345,
+    "total": 11552211.22,
+    "regimes": {"REGULAR_24M": 25131, "PISO_MADURO": 215, "INTRODUCAO": 2342,
                 "SUBSTITUICAO_DESTINO": 118, "SUBSTITUICAO_ORIGEM": 115,
-                "INTRODUCAO_ZERO": 423},
+                "INTRODUCAO_ZERO": 424},
 }
 
 
@@ -91,9 +91,12 @@ def test_linhas_batem_por_chave_com_o_estado_aceito(reexecucao):
                     where promotor_codigo is null or btrim(promotor_codigo::text) = ''""")
     sem_promotor = {str(r[0]) for r in cur.fetchall()}
     conn.close()
-    aceito = {k: v for k, v in bruto.items() if k[0] not in sem_promotor}
-    removidos = {k: v for k, v in bruto.items() if k[0] in sem_promotor}
-    assert len(removidos) == 699, f"esperado 699 pares sem promotor, veio {len(removidos)}"
+    # regra B2 (Alex, 14/11): sem promotor fica fora, EXCETO o canal Indireto
+    INDIRETO = {"80353", "80398", "84136", "75948", "82978", "83780"}
+    excluir = sem_promotor - INDIRETO
+    aceito = {k: v for k, v in bruto.items() if k[0] not in excluir}
+    removidos = {k: v for k, v in bruto.items() if k[0] in excluir}
+    assert len(removidos) == 593, f"esperado 593 pares sem promotor (B2), veio {len(removidos)}"
     motor = defaultdict(float)
     for l in reexecucao["linhas"]:
         motor[(str(l["cliente"]), str(l["sku"]))] += float(l["meta_original_ajustada"])
@@ -103,4 +106,4 @@ def test_linhas_batem_por_chave_com_o_estado_aceito(reexecucao):
 
 
 def test_universo_identico(reexecucao):
-    assert reexecucao["totais"]["linhas"] == 28239   # 28.237 + 2 linhas de destino fundidas
+    assert reexecucao["totais"]["linhas"] == 28345
