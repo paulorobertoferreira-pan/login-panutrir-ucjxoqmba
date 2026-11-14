@@ -244,7 +244,11 @@ def validar(caminho: str, limite_meses=None) -> dict:
             except (ValueError, TypeError) as exc:
                 rejeitar("codigo_vazio", linha_n, str(exc))
                 continue
-            if cli <= 0 or sku <= 0:
+            # D3 (Kim, 11/11): codcli = 0 é CLIENTE REAL (a aba Auditoria Estrutura
+            # do gabarito traz o 0 com R$ 50.002,93 de venda) — aceita. O que
+            # continua rejeitado é a AUSÊNCIA de código (vazio/nulo). Só o SKU
+            # precisa ser positivo: SKU 0 não existe no catálogo.
+            if cli < 0 or sku <= 0:
                 rejeitar("codigo_vazio", linha_n, "cli={} sku={}".format(cli, sku))
                 continue
 
