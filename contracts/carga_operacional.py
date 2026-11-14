@@ -24,6 +24,7 @@ Códigos de saída: 0 carga concluída · 1 falhou (transação revertida) · 2 
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
