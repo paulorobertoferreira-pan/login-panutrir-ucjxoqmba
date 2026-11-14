@@ -123,14 +123,28 @@ def _abrir_xlsx(caminho: Path):
         wb = openpyxl.load_workbook(caminho, read_only=True, data_only=True)
     except Exception as exc:  # arquivo corrompido ou formato diferente
         return None, f"nao foi possivel abrir o xlsx: {exc}", None
-    ws = wb[wb.sheetnames[0]]
-    it = ws.iter_rows(values_only=True)
-    try:
-        cab = next(it)
-    except StopIteration:
+    # escolher a ABA DE DADOS: os arquivos de 2024/2025 trazem uma segunda aba
+    # com ruído (só `uf`/`MS`). A aba certa é a que tem mais colunas reconhecidas
+    # pelo contrato — nunca presumir que é a primeira.
+    melhor, melhor_score = None, -1
+    for nome in wb.sheetnames:
+        ws = wb[nome]
+        it = ws.iter_rows(values_only=True)
+        try:
+            cab = next(it)
+        except StopIteration:
+            continue
+        cabecalho = [str(c).strip() if c is not None else "" for c in cab]
+        score = sum(1 for h in cabecalho if ALIASES.get(h.strip().lower()))
+        if score > melhor_score:
+            melhor, melhor_score = (nome, cabecalho), score
+    if melhor is None:
         wb.close()
         return None, "planilha vazia", None
-    cabecalho = [str(c).strip() if c is not None else "" for c in cab]
+    nome_aba, cabecalho = melhor
+    ws = wb[nome_aba]
+    it = ws.iter_rows(values_only=True)
+    next(it)   # pular o cabeçalho da aba escolhida
 
     def gerador():
         try:
