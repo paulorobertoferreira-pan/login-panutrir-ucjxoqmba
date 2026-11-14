@@ -110,7 +110,10 @@ def agregar(caminho: Path, meses_filtro: set[str] | None = None) -> dict:
             except (ValueError, TypeError) as exc:
                 rejeitar("codigo_vazio", linha_n, exc)
                 continue
-            if cli <= 0 or sku <= 0:
+            # D3 (Kim, 11/11): codcli = 0 é cliente REAL — só o SKU precisa ser
+            # positivo (não existe SKU 0 no catálogo). Código ausente já caiu
+            # no except acima.
+            if cli < 0 or sku <= 0:
                 rejeitar("codigo_vazio", linha_n, f"cli={cli} sku={sku}")
                 continue
 
