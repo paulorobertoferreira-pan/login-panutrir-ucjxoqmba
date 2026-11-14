@@ -28,6 +28,10 @@ from motor_core import calcular_linha, _r2          # noqa: E402
 DSN = os.environ.get("PANUTRIR_DSN",
                      "host=127.0.0.1 port=5432 dbname=panutrir_t23 user=panutrir password=panutrir")
 GABARITO_OUT26 = 11701803.73
+# Canal Indireto (Fase 1, T6.1): 6 clientes com responsável próprio, sem promotor.
+# Fonte: aba Meta Cliente do gabarito Out/26 (G-05 = R$ 435.375,28 exato).
+# Decisão B2 do Alex (14/11): ficam no cálculo mesmo sem promotor.
+CANAL_INDIRETO = {"80353", "80398", "84136", "75948", "82978", "83780"}
 
 
 def calcular(ciclo: str, dsn: str = DSN) -> dict:
@@ -152,8 +156,9 @@ def calcular(ciclo: str, dsn: str = DSN) -> dict:
 
     universo = []
     for (cc, sk) in V1:
-        if not str(PROMO.get(str(cc), "") or "").strip():
-            continue                # decisão 14/11: sem promotor, fora
+        if not str(PROMO.get(str(cc), "") or "").strip() and str(cc) not in CANAL_INDIRETO:
+            continue                # decisão 14/11 (B2, 14/11): sem promotor, fora —
+                                    # EXCETO o canal Indireto (responsável próprio, Fase 1)
         if sk not in CATALOGO:      # D2: SKU sem produto fica FORA
             continue
         if sk in PANETTONE:
@@ -192,6 +197,18 @@ def calcular(ciclo: str, dsn: str = DSN) -> dict:
                                "transferencia_recebida": round(transf, 2),
                                "meta_original_ajustada": round(transf, 2)})
         linhas.append(mem)
+
+    # responsável por linha (exigido pelo GAP e pela descida): supervisor e
+    # promotor do catálogo, por Cliente. O canal Indireto (sem promotor) fica
+    # com o supervisor do catálogo — é a sua unidade própria (Fase 1, T6.1).
+    with psycopg.connect(dsn) as c2:
+        CLI_RESP = {str(r[0]): (str(r[1] or "").strip() or None, str(r[2] or "").strip() or None)
+                    for r in c2.execute("select cliente_codigo, supervisor_codigo, promotor_codigo "
+                                        "from catalog_clientes").fetchall()}
+    for l in linhas:
+        sup, prom = CLI_RESP.get(str(l["cliente"]), (None, None))
+        l["supervisor"] = sup
+        l["promotor"] = prom
 
     tot = sum(l["meta_original_ajustada"] for l in linhas)
     regimes = defaultdict(int)
