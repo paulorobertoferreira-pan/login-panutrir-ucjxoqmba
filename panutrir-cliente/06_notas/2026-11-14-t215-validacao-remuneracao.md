@@ -6,24 +6,24 @@
 
 ## Resultado por TOTAL
 
-| Item | Remuneração (arquivo) | Sistema (motor) | Diferença |
-|---|---|---|---|
-| Σ Meta | **R$ 11.136.421,00** | R$ 11.254.295,67 (total) / R$ 10.691.284,75 (por promotor) | ver análise |
-| Promotores | 133 | 123 com meta (+ 5 sem) | 10 a mais no arquivo |
-| Promotores comparáveis por nome | 109 | — | 0 no centavo |
+| Item                            | Remuneração (arquivo) | Sistema (motor)                                            | Diferença            |
+| ------------------------------- | --------------------- | ---------------------------------------------------------- | -------------------- |
+| Σ Meta                          | **R$ 11.136.421,00**  | R$ 11.254.295,67 (total) / R$ 10.691.284,75 (por promotor) | ver análise          |
+| Promotores                      | 133                   | 123 com meta (+ 5 sem)                                     | 10 a mais no arquivo |
+| Promotores comparáveis por nome | 109                   | —                                                          | 0 no centavo         |
 
 **0 promotores batem no centavo.** Isso não é ruído de arredondamento — é uma diferença de
 construção. As três causas abaixo explicam praticamente todo o total.
 
 ## Causa 1 — 4 promotores têm meta NULA na remuneração, e o sistema lhes dá R$ 969.197,77
 
-| Promotor | Meta na remuneração | Meta no sistema |
-|---|---|---|
-| FRANCISCO CESAR FERREIRA DA COSTA | **(nula)** | R$ 678.421,10 |
-| LUIZ FERNANDO CUSTODIO MARTINS | (nula) | — |
-| ADILSON LUIS RAMOS DA SILVA | (nula) | — |
-| CANAL INDIRETO BARUERI | (nula) | — |
-| **Σ do sistema nesses 4** | **R$ 0,00** | **R$ 969.197,77** |
+| Promotor                          | Meta na remuneração | Meta no sistema   |
+| --------------------------------- | ------------------- | ----------------- |
+| FRANCISCO CESAR FERREIRA DA COSTA | **(nula)**          | R$ 678.421,10     |
+| LUIZ FERNANDO CUSTODIO MARTINS    | (nula)              | —                 |
+| ADILSON LUIS RAMOS DA SILVA       | (nula)              | —                 |
+| CANAL INDIRETO BARUERI            | (nula)              | —                 |
+| **Σ do sistema nesses 4**         | **R$ 0,00**         | **R$ 969.197,77** |
 
 A remuneração deixa a meta **em branco** para esses promotores (provavelmente porque o gatilho de
 bônus está inativo/`Inativo` para eles, ou porque a meta não é paga a eles). O sistema continua

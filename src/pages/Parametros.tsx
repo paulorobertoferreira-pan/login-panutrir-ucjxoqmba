@@ -1,6 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Loader2, Save, RefreshCw, CheckCircle2, AlertTriangle, Pencil } from 'lucide-react'
+import {
+  ArrowLeft,
+  Loader2,
+  Save,
+  RefreshCw,
+  CheckCircle2,
+  AlertTriangle,
+  Pencil,
+} from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -82,10 +90,18 @@ export default function Parametros() {
       .eq('status', 'oficial')
       .order('criado_em', { ascending: false })
       .limit(1)
-    if (ev) { setErro(ev.message); setCarregando(false); return }
+    if (ev) {
+      setErro(ev.message)
+      setCarregando(false)
+      return
+    }
     const versaoOficial = (v ?? [])[0] as Versao | undefined
     setVersao(versaoOficial ?? null)
-    if (!versaoOficial) { setValores([]); setCarregando(false); return }
+    if (!versaoOficial) {
+      setValores([])
+      setCarregando(false)
+      return
+    }
     const { data: vals, error: evl } = await supabase
       .from('parametros_valor')
       .select('parametro_codigo, descricao, valor_numero, valor_texto, unidade, pendente_de')
@@ -120,8 +136,14 @@ export default function Parametros() {
   const salvar = async () => {
     setErroForm(null)
     if (!versao) return
-    if (!editMotivo.trim()) { setErroForm('Informe o motivo da alteração'); return }
-    if (!editValor.trim()) { setErroForm('Informe o valor (ou marque PENDENTE)'); return }
+    if (!editMotivo.trim()) {
+      setErroForm('Informe o motivo da alteração')
+      return
+    }
+    if (!editValor.trim()) {
+      setErroForm('Informe o valor (ou marque PENDENTE)')
+      return
+    }
     setSalvando(true)
     const alteracao: Record<string, string | number> = editPendente
       ? { [editCodigo]: 'PENDENTE' }
@@ -136,9 +158,14 @@ export default function Parametros() {
       p_alteracoes: alteracao,
     })
     setSalvando(false)
-    if (error) { setErroForm(error.message); return }
+    if (error) {
+      setErroForm(error.message)
+      return
+    }
     setEditOpen(false)
-    setAviso(`Versão nova criada (${String(data).slice(0, 8)}…) com ${editCodigo} = ${editPendente ? 'PENDENTE' : editValor}. A versão anterior segue intacta.`)
+    setAviso(
+      `Versão nova criada (${String(data).slice(0, 8)}…) com ${editCodigo} = ${editPendente ? 'PENDENTE' : editValor}. A versão anterior segue intacta.`,
+    )
     await carregar()
   }
 
@@ -181,7 +208,8 @@ export default function Parametros() {
           </h2>
           {versao && (
             <p className="font-sans text-sm text-[#7A6A5A]">
-              {versao.versao_codigo} · status <strong>{versao.status}</strong> · autor {versao.autor} · motivo: {versao.motivo}
+              {versao.versao_codigo} · status <strong>{versao.status}</strong> · autor{' '}
+              {versao.autor} · motivo: {versao.motivo}
             </p>
           )}
         </div>
@@ -208,17 +236,30 @@ export default function Parametros() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#E5D9C8] bg-[#FAF6EF]">
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#7A6A5A]">Código</th>
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#7A6A5A]">Descrição</th>
-                  <th className="text-right px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#7A6A5A]">Valor</th>
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#7A6A5A]">Unidade</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#7A6A5A]">
+                    Código
+                  </th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#7A6A5A]">
+                    Descrição
+                  </th>
+                  <th className="text-right px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#7A6A5A]">
+                    Valor
+                  </th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#7A6A5A]">
+                    Unidade
+                  </th>
                   <th className="px-4 py-2.5"></th>
                 </tr>
               </thead>
               <tbody>
                 {valores.map((p) => (
-                  <tr key={p.parametro_codigo} className="border-b border-[#E5D9C8]/60 last:border-0">
-                    <td className="px-4 py-2.5 font-mono text-xs font-semibold">{p.parametro_codigo}</td>
+                  <tr
+                    key={p.parametro_codigo}
+                    className="border-b border-[#E5D9C8]/60 last:border-0"
+                  >
+                    <td className="px-4 py-2.5 font-mono text-xs font-semibold">
+                      {p.parametro_codigo}
+                    </td>
                     <td className="px-4 py-2.5 text-xs text-[#7A6A5A]">{p.descricao}</td>
                     <td className="px-4 py-2.5 text-right font-mono text-xs">
                       {p.pendente_de != null ? (
@@ -241,7 +282,11 @@ export default function Parametros() {
                   </tr>
                 ))}
                 {valores.length === 0 && (
-                  <tr><td colSpan={5} className="px-4 py-8 text-center text-xs text-[#7A6A5A]">Nenhuma versão oficial encontrada.</td></tr>
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-xs text-[#7A6A5A]">
+                      Nenhuma versão oficial encontrada.
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>
@@ -249,24 +294,25 @@ export default function Parametros() {
         )}
 
         <p className="text-xs text-[#7A6A5A]">
-          Toda alteração cria uma <strong>versão nova</strong> (rascunho) com autor e motivo — a versão oficial nunca é editada
-          (trigger de imutabilidade da T3.1). Valor sem resposta do cliente fica gravado como <strong>PENDENTE</strong>.
+          Toda alteração cria uma <strong>versão nova</strong> (rascunho) com autor e motivo — a
+          versão oficial nunca é editada (trigger de imutabilidade da T3.1). Valor sem resposta do
+          cliente fica gravado como <strong>PENDENTE</strong>.
         </p>
       </main>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="sm:max-w-md bg-white">
           <DialogHeader>
-            <DialogTitle className="font-serif text-xl">
-              Editar {editCodigo}
-            </DialogTitle>
+            <DialogTitle className="font-serif text-xl">Editar {editCodigo}</DialogTitle>
             <DialogDescription>
               {editDescricao} — a alteração cria uma versão nova; a atual segue intacta.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="valor" className="text-sm font-semibold">Novo valor</Label>
+              <Label htmlFor="valor" className="text-sm font-semibold">
+                Novo valor
+              </Label>
               <Input
                 id="valor"
                 value={editValor}
@@ -280,13 +326,18 @@ export default function Parametros() {
               <input
                 type="checkbox"
                 checked={editPendente}
-                onChange={(e) => { setEditPendente(e.target.checked); if (e.target.checked) setEditValor('PENDENTE') }}
+                onChange={(e) => {
+                  setEditPendente(e.target.checked)
+                  if (e.target.checked) setEditValor('PENDENTE')
+                }}
                 className="w-4 h-4 accent-[#D99A2B]"
               />
               Marcar como <strong>PENDENTE</strong> (sem resposta do cliente ainda)
             </label>
             <div className="space-y-2">
-              <Label htmlFor="motivo" className="text-sm font-semibold">Motivo (obrigatório)</Label>
+              <Label htmlFor="motivo" className="text-sm font-semibold">
+                Motivo (obrigatório)
+              </Label>
               <Input
                 id="motivo"
                 value={editMotivo}
@@ -303,12 +354,22 @@ export default function Parametros() {
             )}
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancelar</Button>
-            <Button onClick={salvar} disabled={salvando} className="bg-[#D99A2B] hover:bg-[#C4881F] text-white">
+            <Button variant="outline" onClick={() => setEditOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={salvar}
+              disabled={salvando}
+              className="bg-[#D99A2B] hover:bg-[#C4881F] text-white"
+            >
               {salvando ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Criando versão…</>
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Criando versão…
+                </>
               ) : (
-                <><Save className="w-4 h-4" /> Criar versão nova</>
+                <>
+                  <Save className="w-4 h-4" /> Criar versão nova
+                </>
               )}
             </Button>
           </DialogFooter>

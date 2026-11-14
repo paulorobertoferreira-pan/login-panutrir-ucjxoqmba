@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, Target, ListChecks, Search, Download, Loader2, Settings, Upload } from 'lucide-react'
+import {
+  LogOut,
+  Target,
+  ListChecks,
+  Search,
+  Download,
+  Loader2,
+  Settings,
+  Upload,
+} from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { supabase } from '@/lib/supabase/client'
 import { PanutrirLogo } from '@/components/PanutrirLogo'
@@ -80,7 +89,10 @@ export default function Dashboard() {
   const userEmail = user?.email || session?.user?.email || 'colaborador@panutrir.com.br'
   const userName =
     user?.user_metadata?.name ||
-    userEmail.split('@')[0].replace('.', ' ').replace(/\b\w/g, (l) => l.toUpperCase())
+    userEmail
+      .split('@')[0]
+      .replace('.', ' ')
+      .replace(/\b\w/g, (l) => l.toUpperCase())
 
   const fmtBRL = (v: number | null | undefined) =>
     v == null ? '—' : Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -141,7 +153,9 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
               <div className="p-5 rounded-xl bg-[#FAF6EF] border border-[#E5D9C8] space-y-2">
                 <div className="flex items-center justify-between text-[#7A6A5A]">
-                  <span className="text-xs font-medium uppercase tracking-wider">Meta Original</span>
+                  <span className="text-xs font-medium uppercase tracking-wider">
+                    Meta Original
+                  </span>
                   <Target className="w-4 h-4 text-[#D99A2B]" />
                 </div>
                 <p className="font-serif text-2xl font-bold text-[#2C1E12]">
@@ -151,10 +165,14 @@ export default function Dashboard() {
 
               <div className="p-5 rounded-xl bg-[#FAF6EF] border border-[#E5D9C8] space-y-2">
                 <div className="flex items-center justify-between text-[#7A6A5A]">
-                  <span className="text-xs font-medium uppercase tracking-wider">GAP Distribuído</span>
+                  <span className="text-xs font-medium uppercase tracking-wider">
+                    GAP Distribuído
+                  </span>
                   <ListChecks className="w-4 h-4 text-[#D99A2B]" />
                 </div>
-                <p className="font-serif text-2xl font-bold text-[#2C1E12]">{fmtBRL(totais?.gap)}</p>
+                <p className="font-serif text-2xl font-bold text-[#2C1E12]">
+                  {fmtBRL(totais?.gap)}
+                </p>
               </div>
 
               <div className="p-5 rounded-xl bg-[#FAF6EF] border border-[#E5D9C8] space-y-2">

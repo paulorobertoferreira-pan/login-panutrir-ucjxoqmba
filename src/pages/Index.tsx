@@ -132,15 +132,22 @@ export default function Index() {
   }
 
   return (
-    <div className="min-h-screen flex bg-[#FAF6EF] text-[#2C1E12] font-sans">
+    <div className="min-h-screen flex bg-[#FAF6EF] text-[#2C1E12] font-sans animate-in fade-in duration-700">
       {/* Painel Esquerdo - Identidade */}
-      <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden bg-[#3E2A1E]">
         <img
           src="https://img.usecurling.com/p/1600/1200?q=artisan+bread"
           alt="Pães artesanais Panutrir"
           className="absolute inset-0 w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-[#3E2A1E]/95 via-[#3E2A1E]/85 to-[#5C3F2D]/70" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#2C1E12]/95 via-[#3E2A1E]/88 to-[#7A4E2D]/75" />
+        <div
+          className="absolute inset-0 opacity-60"
+          style={{
+            backgroundImage:
+              'radial-gradient(circle at 20% 15%, rgba(217,154,43,0.35), transparent 45%), radial-gradient(circle at 85% 90%, rgba(217,154,43,0.22), transparent 50%)',
+          }}
+        />
         <div className="relative z-10 flex flex-col justify-between p-10 xl:p-14 w-full">
           <PanutrirLogo variant="light" size="lg" showSlogan={true} />
 
@@ -151,6 +158,7 @@ export default function Index() {
             <h1 className="font-serif text-4xl xl:text-5xl font-bold text-[#FAF6EF] leading-tight tracking-tight">
               Sistema de Controle de Metas
             </h1>
+            <div className="h-px w-28 bg-gradient-to-r from-[#D99A2B] via-[#F2C46D] to-transparent shadow-[0_0_12px_rgba(217,154,43,0.6)]" />
             <p className="font-sans text-[#FAF6EF]/85 text-base xl:text-lg leading-relaxed">
               Ferramenta interna da Panutrir para gestão de desempenho, alinhamento estratégico de
               produção e acompanhamento de objetivos operacionais.
@@ -174,7 +182,7 @@ export default function Index() {
       </div>
 
       {/* Painel Direito - Login */}
-      <div className="w-full lg:w-[45%] flex flex-col">
+      <div className="w-full lg:w-[45%] min-h-screen flex flex-col px-6 pt-6 sm:px-10 lg:px-14 bg-[#FAF6EF]">
         <div className="w-full max-w-[420px] flex items-center justify-end">
           <button
             type="button"
@@ -188,14 +196,16 @@ export default function Index() {
         </div>
 
         {/* Container Centralizado de 420px */}
-        <div className="w-full max-w-[420px] my-auto space-y-7 animate-in fade-in slide-in-from-bottom-5 duration-500">
+        <div className="w-full max-w-[420px] my-auto space-y-7 animate-in fade-in slide-in-from-bottom-5 duration-700 ease-out">
           {/* Logo exibido no mobile acima do título */}
           <div className="flex justify-center md:hidden mb-4">
             <PanutrirLogo variant="dark" size="md" showSlogan={true} />
           </div>
 
           <div className="space-y-2">
-            <h2 className="font-serif text-3xl font-bold tracking-tight">Bem-vindo de volta</h2>
+            <h2 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight leading-tight text-[#2C1E12]">
+              Bem-vindo de volta
+            </h2>
             <p className="text-sm text-[#7A6A5A]">Acesse sua conta para continuar</p>
           </div>
 
@@ -215,7 +225,7 @@ export default function Index() {
                 value={email}
                 onChange={handleEmailChange}
                 onBlur={handleEmailBlur}
-                className={`h-11 bg-white border-[#E5D9C8] focus-visible:ring-[#D99A2B]/40 focus-visible:border-[#D99A2B] ${
+                className={`h-12 rounded-xl bg-white border-[#E5D9C8] shadow-sm transition-all duration-200 focus-visible:ring-4 focus-visible:ring-[#D99A2B]/15 focus-visible:border-[#D99A2B] ${
                   emailError ? 'border-[#C44133]' : ''
                 }`}
                 autoComplete="email"
@@ -252,7 +262,7 @@ export default function Index() {
                   value={password}
                   onChange={handlePasswordChange}
                   onBlur={handlePasswordBlur}
-                  className={`h-11 pr-10 bg-white border-[#E5D9C8] focus-visible:ring-[#D99A2B]/40 focus-visible:border-[#D99A2B] ${
+                  className={`h-12 rounded-xl pr-10 bg-white border-[#E5D9C8] shadow-sm transition-all duration-200 focus-visible:ring-4 focus-visible:ring-[#D99A2B]/15 focus-visible:border-[#D99A2B] ${
                     passwordError ? 'border-[#C44133]' : ''
                   }`}
                   autoComplete="current-password"
@@ -283,7 +293,7 @@ export default function Index() {
             <Button
               type="submit"
               disabled={submitting}
-              className="w-full h-12 bg-[#D99A2B] hover:bg-[#C4881F] text-white font-semibold text-base shadow-md hover:shadow-lg transition-all"
+              className="w-full h-12 rounded-xl bg-[#D99A2B] hover:bg-[#C4881F] text-white font-semibold text-base shadow-[0_6px_16px_-4px_rgba(217,154,43,0.55)] hover:shadow-[0_12px_24px_-6px_rgba(196,136,31,0.6)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 disabled:opacity-70"
             >
               {submitting ? (
                 <>
@@ -329,7 +339,7 @@ export default function Index() {
 
       {/* Modal Esqueceu sua senha */}
       <Dialog open={resetOpen} onOpenChange={setResetOpen}>
-        <DialogContent className="sm:max-w-md bg-white">
+        <DialogContent className="sm:max-w-md bg-[#FAF6EF] border-[#E5D9C8] rounded-2xl shadow-2xl duration-300">
           <DialogHeader>
             <DialogTitle className="font-serif text-xl flex items-center gap-2">
               <KeyRound className="w-5 h-5 text-[#D99A2B]" />
