@@ -38,6 +38,9 @@ CONTRATO = Path(__file__).with_name("vendas.v2.0.0.json")
 ALIASES = {
     "mesano: mês": "mes",
     "mesano: mes": "mes",
+    # export do BI com a coluna já nomeada só "Mês" (arquivo de Out/26, 11/2026)
+    "mês": "mes",
+    "mes": "mes",
     "id_empresa": "id_empresa",
     "tipo": "tipo",
     "regiao": "regiao",
@@ -120,14 +123,28 @@ def _abrir_xlsx(caminho: Path):
         wb = openpyxl.load_workbook(caminho, read_only=True, data_only=True)
     except Exception as exc:  # arquivo corrompido ou formato diferente
         return None, f"nao foi possivel abrir o xlsx: {exc}", None
-    ws = wb[wb.sheetnames[0]]
-    it = ws.iter_rows(values_only=True)
-    try:
-        cab = next(it)
-    except StopIteration:
+    # escolher a ABA DE DADOS: os arquivos de 2024/2025 trazem uma segunda aba
+    # com ruído (só `uf`/`MS`). A aba certa é a que tem mais colunas reconhecidas
+    # pelo contrato — nunca presumir que é a primeira.
+    melhor, melhor_score = None, -1
+    for nome in wb.sheetnames:
+        ws = wb[nome]
+        it = ws.iter_rows(values_only=True)
+        try:
+            cab = next(it)
+        except StopIteration:
+            continue
+        cabecalho = [str(c).strip() if c is not None else "" for c in cab]
+        score = sum(1 for h in cabecalho if ALIASES.get(h.strip().lower()))
+        if score > melhor_score:
+            melhor, melhor_score = (nome, cabecalho), score
+    if melhor is None:
         wb.close()
         return None, "planilha vazia", None
-    cabecalho = [str(c).strip() if c is not None else "" for c in cab]
+    nome_aba, cabecalho = melhor
+    ws = wb[nome_aba]
+    it = ws.iter_rows(values_only=True)
+    next(it)   # pular o cabeçalho da aba escolhida
 
     def gerador():
         try:
@@ -241,7 +258,11 @@ def validar(caminho: str, limite_meses=None) -> dict:
             except (ValueError, TypeError) as exc:
                 rejeitar("codigo_vazio", linha_n, str(exc))
                 continue
-            if cli <= 0 or sku <= 0:
+            # D3 (Kim, 11/11): codcli = 0 é CLIENTE REAL (a aba Auditoria Estrutura
+            # do gabarito traz o 0 com R$ 50.002,93 de venda) — aceita. O que
+            # continua rejeitado é a AUSÊNCIA de código (vazio/nulo). Só o SKU
+            # precisa ser positivo: SKU 0 não existe no catálogo.
+            if cli < 0 or sku <= 0:
                 rejeitar("codigo_vazio", linha_n, "cli={} sku={}".format(cli, sku))
                 continue
 

@@ -7,6 +7,8 @@ import Index from './pages/Index'
 import Dashboard from './pages/Dashboard'
 import PainelControles from './pages/PainelControles'
 import ConsultaDrillDown from './pages/ConsultaDrillDown'
+import Parametros from './pages/Parametros'
+import ImportarDados from './pages/ImportarDados'
 import PermissionTest from './pages/PermissionTest'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
@@ -27,6 +29,8 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/controles" element={<PainelControles />} />
             <Route path="/consulta" element={<ConsultaDrillDown />} />
+            <Route path="/parametros" element={<Parametros />} />
+            <Route path="/importar" element={<ImportarDados />} />
             <Route path="/permission-test" element={<PermissionTest />} />
             {/* ADD ALL CUSTOM ROUTES MUST BE ADDED HERE */}
           </Route>
