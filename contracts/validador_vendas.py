@@ -38,6 +38,9 @@ CONTRATO = Path(__file__).with_name("vendas.v2.0.0.json")
 ALIASES = {
     "mesano: mês": "mes",
     "mesano: mes": "mes",
+    # export do BI com a coluna já nomeada só "Mês" (arquivo de Out/26, 11/2026)
+    "mês": "mes",
+    "mes": "mes",
     "id_empresa": "id_empresa",
     "tipo": "tipo",
     "regiao": "regiao",
