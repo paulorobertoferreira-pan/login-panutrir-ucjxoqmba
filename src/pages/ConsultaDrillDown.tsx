@@ -8,6 +8,7 @@ import {
   Building2,
   Users,
   Package,
+  Search,
   X,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
@@ -23,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Input } from '@/components/ui/input'
 
 interface AggRow {
   supervisor?: string | null
@@ -191,6 +193,7 @@ export default function ConsultaDrillDown() {
   const [nomes, setNomes] = useState<Record<string, string>>({})
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState<string | null>(null)
+  const [filtroPromotor, setFiltroPromotor] = useState('')
 
   useEffect(() => {
     if (!loading && !user && !session) navigate('/', { replace: true })
@@ -208,10 +211,11 @@ export default function ConsultaDrillDown() {
             .select('regime, n:combinacoes, o:meta_original, g:gap_linha, f:meta_final')
             .eq('referencia_ciclo', '2026-10')
             .order('regime'),
+          // Nível promotor: cada linha traz também o supervisor a que pertence
           supabase
-            .from('vw_meta_supervisor')
+            .from('vw_meta_promotor')
             .select(
-              'supervisor, n:combinacoes, c:clientes, o:meta_original, g:gap_linha, f:meta_final',
+              'supervisor, promotor, n:combinacoes, c:clientes, o:meta_original, g:gap_linha, f:meta_final',
             )
             .eq('referencia_ciclo', '2026-10')
             .order('meta_final', { ascending: false }),
@@ -318,6 +322,11 @@ export default function ConsultaDrillDown() {
     setProm(null)
     setNivel('supervisor')
   }
+  const irParaPromotorDireto = (codigo: string, supervisor: string | null | undefined) => {
+    setSup(supervisor ?? null)
+    setProm(codigo)
+    setNivel('promotor')
+  }
   const irParaPromotor = (codigo: string) => {
     setProm(codigo)
     setNivel('promotor')
@@ -329,6 +338,25 @@ export default function ConsultaDrillDown() {
       setNivel('empresa')
     }
   }
+
+  const filtroNorm = filtroPromotor.trim().toLowerCase()
+  const aggsFiltrados =
+    nivel === 'empresa' && filtroNorm
+      ? aggs.filter((r) => {
+          const rotuloProm = (r.promotor && nomes[r.promotor]) || r.promotor || ''
+          const rotuloSup = (r.supervisor && nomes[r.supervisor]) || r.supervisor || ''
+          return (
+            rotuloProm.toLowerCase().includes(filtroNorm) ||
+            String(r.promotor ?? '')
+              .toLowerCase()
+              .includes(filtroNorm) ||
+            rotuloSup.toLowerCase().includes(filtroNorm) ||
+            String(r.supervisor ?? '')
+              .toLowerCase()
+              .includes(filtroNorm)
+          )
+        })
+      : aggs
 
   const totAgg = (rows: AggRow[]) => ({
     o: rows.reduce((s, r) => s + Number(r.o ?? 0), 0),
@@ -471,6 +499,28 @@ export default function ConsultaDrillDown() {
           </div>
         )}
 
+        {/* Filtro de promotor (topo da tela, nível empresa) */}
+        {nivel === 'empresa' && (
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7A6A5A] pointer-events-none" />
+            <Input
+              value={filtroPromotor}
+              onChange={(e) => setFiltroPromotor(e.target.value)}
+              placeholder="Filtrar por promotor ou supervisor..."
+              className="pl-9 bg-white border-[#E5D9C8] text-sm text-[#2C1E12] placeholder:text-[#7A6A5A] focus-visible:ring-[#D99A2B]"
+            />
+            {filtroPromotor && (
+              <button
+                onClick={() => setFiltroPromotor('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-[#FAF6EF]"
+                title="Limpar filtro"
+              >
+                <X className="w-3.5 h-3.5 text-[#7A6A5A]" />
+              </button>
+            )}
+          </div>
+        )}
+
         {erro && (
           <div className="rounded-xl border border-[#C44133]/30 bg-[#FDE8E6]/50 p-4 text-sm text-[#C44133]">
             Erro ao carregar: {erro}
@@ -484,15 +534,16 @@ export default function ConsultaDrillDown() {
         ) : (
           <>
             {/* Tabela de agregados (empresa/supervisor) */}
-            {aggs.length > 0 && (
+            {aggsFiltrados.length > 0 && (
               <Card className="border-[#E5D9C8] bg-white shadow-sm">
                 <CardContent className="pt-6">
                   <Table>
                     <TableHeader>
                       <TableRow className="border-[#E5D9C8]">
-                        <TableHead className="text-[#7A6A5A]">
-                          {nivel === 'empresa' ? 'Supervisor' : 'Promotor'}
-                        </TableHead>
+                        <TableHead className="text-[#7A6A5A]">Promotor</TableHead>
+                        {nivel === 'empresa' && (
+                          <TableHead className="text-[#7A6A5A]">Supervisor</TableHead>
+                        )}
                         <TableHead className="text-[#7A6A5A] text-right">Combinações</TableHead>
                         <TableHead className="text-[#7A6A5A] text-right">Meta Original</TableHead>
                         <TableHead className="text-[#7A6A5A] text-right">GAP</TableHead>
@@ -501,22 +552,27 @@ export default function ConsultaDrillDown() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {aggs.map((r, i) => {
-                        const codigo = nivel === 'empresa' ? r.supervisor : r.promotor
+                      {aggsFiltrados.map((r, i) => {
+                        const codigo = r.promotor
                         return (
                           <TableRow
-                            key={`${codigo ?? 'sem'}-${i}`}
+                            key={`${codigo ?? 'sem'}-${r.supervisor ?? 'sem'}-${i}`}
                             className="border-[#E5D9C8] cursor-pointer hover:bg-[#FAF6EF]/60"
                             onClick={() =>
                               codigo &&
                               (nivel === 'empresa'
-                                ? irParaSupervisor(codigo)
+                                ? irParaPromotorDireto(codigo, r.supervisor)
                                 : irParaPromotor(codigo))
                             }
                           >
                             <TableCell className="text-xs font-semibold">
-                              {nivel === 'empresa' ? nomeResp(r.supervisor) : nomeResp(r.promotor)}
+                              {nomeResp(r.promotor)}
                             </TableCell>
+                            {nivel === 'empresa' && (
+                              <TableCell className="text-xs text-[#7A6A5A]">
+                                {nomeResp(r.supervisor)}
+                              </TableCell>
+                            )}
                             <TableCell className="text-right font-mono text-xs">
                               {fmtNum(r.n, 0)}
                             </TableCell>
@@ -537,9 +593,9 @@ export default function ConsultaDrillDown() {
                       })}
                       <TableRow className="border-[#E5D9C8] bg-[#FAF6EF]/60">
                         <TableCell className="text-xs font-bold">Total</TableCell>
-                        <TableCell />
+                        {nivel === 'empresa' && <TableCell />}
                         {(() => {
-                          const t = totAgg(aggs)
+                          const t = totAgg(aggsFiltrados)
                           return (
                             <>
                               <TableCell className="text-right font-mono text-xs font-bold">
@@ -561,6 +617,16 @@ export default function ConsultaDrillDown() {
                 </CardContent>
               </Card>
             )}
+            {nivel === 'empresa' &&
+              !carregando &&
+              aggs.length > 0 &&
+              aggsFiltrados.length === 0 && (
+                <Card className="border-[#E5D9C8] bg-white shadow-sm">
+                  <CardContent className="py-10 text-center text-sm text-[#7A6A5A]">
+                    Nenhum promotor encontrado para “{filtroPromotor}”.
+                  </CardContent>
+                </Card>
+              )}
 
             {/* Tabela de linhas (promotor) */}
             {linhas.length > 0 && (
@@ -568,7 +634,7 @@ export default function ConsultaDrillDown() {
                 <CardContent className="pt-6">
                   <p className="text-xs text-[#7A6A5A] mb-3">
                     {linhas.length} combinações Cliente × SKU (limite de exibição: 300, ordenadas
-                    pela Meta Final)
+                    pela Meta Final) · Promotor: {nomeResp(prom)} · Supervisor: {nomeResp(sup)}
                   </p>
                   <Table>
                     <TableHeader>
