@@ -30,19 +30,33 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/compone
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { centavos } from '@/lib/redistribuicao'
 
-type Alvo = { promotor: string; supervisor: string | null; cliente?: string; sku?: string; nome?: string }
+type Alvo = {
+  promotor: string
+  supervisor: string | null
+  cliente?: string
+  sku?: string
+  nome?: string
+}
 type EstadoAjuste = { habilitado: boolean; revisao?: number; motivo?: string }
 async function consultarAjuste(mes: string, args: Record<string, unknown> = {}) {
-  const db = supabase as unknown as { rpc: (nome: string, args: Record<string, unknown>) => PromiseLike<{data: EstadoAjuste | null; error: {message: string} | null}> }
-  const {data,error} = await db.rpc('transferir_meta_vigente', {p_mes: mes, ...args})
+  const db = supabase as unknown as {
+    rpc: (
+      nome: string,
+      args: Record<string, unknown>,
+    ) => PromiseLike<{ data: EstadoAjuste | null; error: { message: string } | null }>
+  }
+  const { data, error } = await db.rpc('transferir_meta_vigente', { p_mes: mes, ...args })
   if (error || !data) throw new Error(error?.message ?? 'Não foi possível consultar o ajuste.')
   return data
 }
 
 const MES_TAG_PDV = '2026-10'
 type PdvMarcado = {
-  cliente_codigo: string; cliente_nome: string; supervisor_codigo: string | null;
-  promotor_codigo: string | null; tag_pdv: string | null;
+  cliente_codigo: string
+  cliente_nome: string
+  supervisor_codigo: string | null
+  promotor_codigo: string | null
+  tag_pdv: string | null
 }
 
 interface AggRow {
@@ -233,25 +247,44 @@ export default function ConsultaDrillDown() {
   useEffect(() => {
     if (!user || !session) return
     let ativo = true
-    void supabase.from('ciclo_meta').select('mes_referencia').eq('status','publicado')
-      .order('mes_referencia', {ascending: false}).then(({data,error}) => {
+    void supabase
+      .from('ciclo_meta')
+      .select('mes_referencia')
+      .eq('status', 'publicado')
+      .order('mes_referencia', { ascending: false })
+      .then(({ data, error }) => {
         if (!ativo || error || !data?.length) return
-        setCiclos(data.map(c => c.mes_referencia)); setMes(data[0].mes_referencia)
+        setCiclos(data.map((c) => c.mes_referencia))
+        setMes(data[0].mes_referencia)
       })
-    return () => { ativo = false }
+    return () => {
+      ativo = false
+    }
   }, [user, session])
   useEffect(() => {
     if (!user || !session) return
     let ativo = true
-    setEstado(null); setContrapartes([])
-    void consultarAjuste(mes).then(async r => {
-      if (ativo) setEstado(r)
-      if (!r.habilitado) return
-      const {data,error} = await supabase.from('vw_meta_promotor').select('supervisor,promotor,f:meta_final')
-        .eq('referencia_ciclo',mes).gt('meta_final',0).order('promotor').order('supervisor')
-      if (ativo && !error) setContrapartes((data ?? []) as AggRow[])
-    }).catch(() => { if (ativo) setEstado(null) })
-    return () => { ativo = false }
+    setEstado(null)
+    setContrapartes([])
+    void consultarAjuste(mes)
+      .then(async (r) => {
+        if (ativo) setEstado(r)
+        if (!r.habilitado) return
+        const { data, error } = await supabase
+          .from('vw_meta_promotor')
+          .select('supervisor,promotor,f:meta_final')
+          .eq('referencia_ciclo', mes)
+          .gt('meta_final', 0)
+          .order('promotor')
+          .order('supervisor')
+        if (ativo && !error) setContrapartes((data ?? []) as AggRow[])
+      })
+      .catch(() => {
+        if (ativo) setEstado(null)
+      })
+    return () => {
+      ativo = false
+    }
   }, [mes, user, session])
 
   useEffect(() => {
@@ -259,49 +292,84 @@ export default function ConsultaDrillDown() {
     let ativo = true
     setEstadoPdvs('carregando')
     const dia = `${MES_TAG_PDV}-01`
-    void supabase.from('catalog_clientes')
+    void supabase
+      .from('catalog_clientes')
       .select('cliente_codigo,cliente_nome,supervisor_codigo,promotor_codigo,tag_pdv')
-      .in('tag_pdv', ['novo_na_base', 'lacuna']).lte('vigencia_inicio', dia)
-      .or(`vigencia_fim.is.null,vigencia_fim.gt.${dia}`).order('cliente_codigo')
+      .in('tag_pdv', ['novo_na_base', 'lacuna'])
+      .lte('vigencia_inicio', dia)
+      .or(`vigencia_fim.is.null,vigencia_fim.gt.${dia}`)
+      .order('cliente_codigo')
       .then(({ data, error }) => {
         if (!ativo) return
         setPdvsMarcados(error ? [] : (data ?? []))
         setEstadoPdvs(error ? 'erro' : 'pronto')
       })
-    return () => { ativo = false }
+    return () => {
+      ativo = false
+    }
   }, [user, session, mes, apenasNovosPdvs])
 
   function abrirAjuste(a: Alvo) {
-    setValorAjuste(''); setMotivoAjuste(''); setErroAjuste(''); setAvisoAjuste('')
-    setContraparte(''); setAcao('adicionar'); setAlvo(a)
+    setValorAjuste('')
+    setMotivoAjuste('')
+    setErroAjuste('')
+    setAvisoAjuste('')
+    setContraparte('')
+    setAcao('adicionar')
+    setAlvo(a)
   }
   function abrirDetalhe(l: LinhaRow, porProduto: boolean) {
     if (!l.promotor) return
-    abrirAjuste({promotor:l.promotor, supervisor:l.supervisor, cliente:l.cliente,
-      sku:porProduto ? l.sku : undefined, nome:porProduto ? `${l.cliente_nome ?? l.cliente} · ${l.produto_nome ?? l.sku}` : l.cliente_nome ?? l.cliente})
+    abrirAjuste({
+      promotor: l.promotor,
+      supervisor: l.supervisor,
+      cliente: l.cliente,
+      sku: porProduto ? l.sku : undefined,
+      nome: porProduto
+        ? `${l.cliente_nome ?? l.cliente} · ${l.produto_nome ?? l.sku}`
+        : (l.cliente_nome ?? l.cliente),
+    })
   }
   async function salvarAjuste(e: React.FormEvent) {
     e.preventDefault()
     if (!alvo || !estado?.habilitado || salvando || contraparte === '') return
-    setSalvando(true); setErroAjuste('')
+    setSalvando(true)
+    setErroAjuste('')
     try {
       const valor = centavos(valorAjuste)
       if (valor <= 0n) throw new Error('Informe um valor positivo.')
       const outro = contrapartes[Number(contraparte)]
       if (!outro?.promotor) throw new Error('Selecione a contraparte.')
-      const unidade = {promotor:alvo.promotor, supervisor:alvo.supervisor, cliente:alvo.cliente, sku:alvo.sku}
-      const contraria = {promotor:outro.promotor, supervisor:outro.supervisor ?? null}
-      const r = await consultarAjuste(mes,{p_origem: acao === 'adicionar' ? contraria : unidade,
+      const unidade = {
+        promotor: alvo.promotor,
+        supervisor: alvo.supervisor,
+        cliente: alvo.cliente,
+        sku: alvo.sku,
+      }
+      const contraria = { promotor: outro.promotor, supervisor: outro.supervisor ?? null }
+      const r = await consultarAjuste(mes, {
+        p_origem: acao === 'adicionar' ? contraria : unidade,
         p_destino: acao === 'adicionar' ? unidade : contraria,
-        p_valor: `${valor / 100n}.${String(valor % 100n).padStart(2,'0')}`,
-        p_motivo:motivoAjuste.trim(),p_revisao:estado.revisao})
+        p_valor: `${valor / 100n}.${String(valor % 100n).padStart(2, '0')}`,
+        p_motivo: motivoAjuste.trim(),
+        p_revisao: estado.revisao,
+      })
       if (!r.habilitado) throw new Error(r.motivo ?? 'Ciclo não habilitado.')
-      setEstado(r); setAlvo(null); setAvisoAjuste('Transferência aplicada à meta vigente. A Meta Diretoria não mudou.')
+      setEstado(r)
+      setAlvo(null)
+      setAvisoAjuste('Transferência aplicada à meta vigente. A Meta Diretoria não mudou.')
       await carregar()
     } catch (erro) {
       setErroAjuste(erro instanceof Error ? erro.message : 'Não foi possível salvar.')
-      try { setEstado(await consultarAjuste(mes)); await carregar() } catch { /* mantém o erro */ }
-    } finally { setSalvando(false) }
+      try {
+        setEstado(await consultarAjuste(mes))
+        await carregar()
+      } catch {
+        /* mantém o erro */
+      }
+    } finally {
+      setSalvando(false)
+    }
   }
 
   useEffect(() => {
@@ -450,24 +518,41 @@ export default function ConsultaDrillDown() {
 
   const filtroNorm = filtroPromotor.trim().toLowerCase()
   const mostrarPdvs = apenasNovosPdvs && mes === MES_TAG_PDV
-  const supervisoresDisponiveis = [...new Set([
-    ...aggs.flatMap(r => r.supervisor ? [r.supervisor] : []),
-    ...(mostrarPdvs ? pdvsMarcados.flatMap(pdv => pdv.supervisor_codigo ? [pdv.supervisor_codigo] : []) : []),
-    ...supervisoresSelecionados,
-  ])].sort((a, b) => nomeResp(a).localeCompare(nomeResp(b), 'pt-BR'))
-  const pdvsFiltrados = pdvsMarcados.filter(pdv => {
+  const supervisoresDisponiveis = [
+    ...new Set([
+      ...aggs.flatMap((r) => (r.supervisor ? [r.supervisor] : [])),
+      ...(mostrarPdvs
+        ? pdvsMarcados.flatMap((pdv) => (pdv.supervisor_codigo ? [pdv.supervisor_codigo] : []))
+        : []),
+      ...supervisoresSelecionados,
+    ]),
+  ].sort((a, b) => nomeResp(a).localeCompare(nomeResp(b), 'pt-BR'))
+  const pdvsFiltrados = pdvsMarcados.filter((pdv) => {
     if (nivel !== 'empresa' && pdv.supervisor_codigo !== sup) return false
     if (nivel === 'promotor' && pdv.promotor_codigo !== prom) return false
-    if (supervisoresSelecionados.length && !supervisoresSelecionados.includes(pdv.supervisor_codigo ?? '')) return false
+    if (
+      supervisoresSelecionados.length &&
+      !supervisoresSelecionados.includes(pdv.supervisor_codigo ?? '')
+    )
+      return false
     if (!filtroNorm) return true
     const codigo = pdv.promotor_codigo ?? ''
     return `${nomes[codigo] ?? ''} ${codigo}`.toLowerCase().includes(filtroNorm)
   })
-  const aggsFiltrados = nivel === 'empresa' ? aggs.filter(r => {
-    if (supervisoresSelecionados.length && !supervisoresSelecionados.includes(r.supervisor ?? '')) return false
-    const promotor = r.promotor ?? ''
-    return !filtroNorm || `${nomes[promotor] ?? ''} ${promotor}`.toLowerCase().includes(filtroNorm)
-  }) : aggs
+  const aggsFiltrados =
+    nivel === 'empresa'
+      ? aggs.filter((r) => {
+          if (
+            supervisoresSelecionados.length &&
+            !supervisoresSelecionados.includes(r.supervisor ?? '')
+          )
+            return false
+          const promotor = r.promotor ?? ''
+          return (
+            !filtroNorm || `${nomes[promotor] ?? ''} ${promotor}`.toLowerCase().includes(filtroNorm)
+          )
+        })
+      : aggs
 
   const totAgg = (rows: AggRow[]) => ({
     o: rows.reduce((s, r) => s + Number(r.o ?? 0), 0),
@@ -486,19 +571,45 @@ export default function ConsultaDrillDown() {
         {alvo && (
           <DialogContent>
             <DialogTitle>Redistribuir meta — {alvo.nome ?? nomeResp(alvo.promotor)}</DialogTitle>
-            <DialogDescription>Ao salvar, o valor sai da origem e entra no destino imediatamente. A Meta Diretoria não muda.</DialogDescription>
+            <DialogDescription>
+              Ao salvar, o valor sai da origem e entra no destino imediatamente. A Meta Diretoria
+              não muda.
+            </DialogDescription>
             <form className="space-y-3" onSubmit={salvarAjuste}>
-              <label className="block">Operação
-                <select className="block w-full rounded border p-2" value={acao} onChange={e => setAcao(e.target.value)} disabled={salvando}>
-                  <option value="adicionar">Adicionar meta</option><option value="retirar">Retirar meta</option>
+              <label className="block">
+                Operação
+                <select
+                  className="block w-full rounded border p-2"
+                  value={acao}
+                  onChange={(e) => setAcao(e.target.value)}
+                  disabled={salvando}
+                >
+                  <option value="adicionar">Adicionar meta</option>
+                  <option value="retirar">Retirar meta</option>
                 </select>
               </label>
-              <label className="block">{acao === 'adicionar' ? 'Retirar de qual promotor?' : 'Transferir para qual promotor?'}
-                <select className="block w-full rounded border p-2" required value={contraparte} onChange={e => setContraparte(e.target.value)} disabled={salvando}>
+              <label className="block">
+                {acao === 'adicionar'
+                  ? 'Retirar de qual promotor?'
+                  : 'Transferir para qual promotor?'}
+                <select
+                  className="block w-full rounded border p-2"
+                  required
+                  value={contraparte}
+                  onChange={(e) => setContraparte(e.target.value)}
+                  disabled={salvando}
+                >
                   <option value="">Selecione um promotor</option>
-                  {contrapartes.map((r,i) => r.promotor && (r.promotor !== alvo.promotor || (r.supervisor ?? null) !== alvo.supervisor) && (
-                    <option key={i} value={i}>{nomeResp(r.promotor)} · {nomeResp(r.supervisor)}</option>
-                  ))}
+                  {contrapartes.map(
+                    (r, i) =>
+                      r.promotor &&
+                      (r.promotor !== alvo.promotor ||
+                        (r.supervisor ?? null) !== alvo.supervisor) && (
+                        <option key={i} value={i}>
+                          {nomeResp(r.promotor)} · {nomeResp(r.supervisor)}
+                        </option>
+                      ),
+                  )}
                 </select>
               </label>
               <label className="block">
@@ -538,7 +649,9 @@ export default function ConsultaDrillDown() {
                 </button>
                 <button
                   className="rounded-lg bg-[#745322] px-3 py-2 text-white disabled:opacity-50"
-                  disabled={salvando || !estado?.habilitado || contraparte === '' || !motivoAjuste.trim()}
+                  disabled={
+                    salvando || !estado?.habilitado || contraparte === '' || !motivoAjuste.trim()
+                  }
                 >
                   {salvando ? 'Salvando…' : 'Salvar ajuste'}
                 </button>
@@ -589,12 +702,32 @@ export default function ConsultaDrillDown() {
           </p>
         </div>
 
-        <label className="block text-sm">Ciclo publicado
-          <select className="ml-2 rounded border bg-white p-2" value={mes} disabled={salvando} onChange={e => {
-            setMes(e.target.value); setApenasNovosPdvs(false); setEstadoPdvs('carregando'); setEstado(null); setAlvo(null); setNivel('empresa'); setSup(null); setProm(null);
-            setAggs([]); setLinhas([]); setRegimes([]); setTotais(null); setSupervisoresSelecionados([]); setAvisoAjuste('')
-          }}>
-            {(ciclos.length ? ciclos : [mes]).map(c => <option key={c}>{c}</option>)}
+        <label className="block text-sm">
+          Ciclo publicado
+          <select
+            className="ml-2 rounded border bg-white p-2"
+            value={mes}
+            disabled={salvando}
+            onChange={(e) => {
+              setMes(e.target.value)
+              setApenasNovosPdvs(false)
+              setEstadoPdvs('carregando')
+              setEstado(null)
+              setAlvo(null)
+              setNivel('empresa')
+              setSup(null)
+              setProm(null)
+              setAggs([])
+              setLinhas([])
+              setRegimes([])
+              setTotais(null)
+              setSupervisoresSelecionados([])
+              setAvisoAjuste('')
+            }}
+          >
+            {(ciclos.length ? ciclos : [mes]).map((c) => (
+              <option key={c}>{c}</option>
+            ))}
           </select>
         </label>
         {estado?.motivo && <p className="text-sm text-[#7A6A5A]">{estado.motivo}</p>}
@@ -698,43 +831,68 @@ export default function ConsultaDrillDown() {
         {/* Filtro de promotor (topo da tela, nível empresa) */}
         {nivel === 'empresa' && (
           <div className="flex flex-wrap items-start gap-3">
-          <div className="relative w-full max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7A6A5A] pointer-events-none" />
-            <Input
-              value={filtroPromotor}
-              onChange={(e) => setFiltroPromotor(e.target.value)}
-              placeholder="Buscar promotor…"
-              className="pl-9 bg-white border-[#E5D9C8] text-sm text-[#2C1E12] placeholder:text-[#7A6A5A] focus-visible:ring-[#D99A2B]"
-            />
-            {filtroPromotor && (
-              <button
-                onClick={() => setFiltroPromotor('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-[#FAF6EF]"
-                title="Limpar filtro"
-              >
-                <X className="w-3.5 h-3.5 text-[#7A6A5A]" />
-              </button>
-            )}
-          </div>
+            <div className="relative w-full max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7A6A5A] pointer-events-none" />
+              <Input
+                value={filtroPromotor}
+                onChange={(e) => setFiltroPromotor(e.target.value)}
+                placeholder="Buscar promotor…"
+                className="pl-9 bg-white border-[#E5D9C8] text-sm text-[#2C1E12] placeholder:text-[#7A6A5A] focus-visible:ring-[#D99A2B]"
+              />
+              {filtroPromotor && (
+                <button
+                  onClick={() => setFiltroPromotor('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-[#FAF6EF]"
+                  title="Limpar filtro"
+                >
+                  <X className="w-3.5 h-3.5 text-[#7A6A5A]" />
+                </button>
+              )}
+            </div>
             <Popover>
               <PopoverTrigger asChild>
-                <button type="button" className="rounded-lg border border-[#E5D9C8] bg-white px-3 py-2 text-sm">
-                  Supervisores: {supervisoresSelecionados.length ? `${supervisoresSelecionados.length} selecionado(s)` : 'Todos'} ▾
+                <button
+                  type="button"
+                  className="rounded-lg border border-[#E5D9C8] bg-white px-3 py-2 text-sm"
+                >
+                  Supervisores:{' '}
+                  {supervisoresSelecionados.length
+                    ? `${supervisoresSelecionados.length} selecionado(s)`
+                    : 'Todos'}{' '}
+                  ▾
                 </button>
               </PopoverTrigger>
               <PopoverContent align="start" aria-label="Filtrar supervisores" className="w-80">
-                <button type="button" onClick={() => setSupervisoresSelecionados([])} className="mb-2 text-sm underline">Limpar seleção</button>
+                <button
+                  type="button"
+                  onClick={() => setSupervisoresSelecionados([])}
+                  className="mb-2 text-sm underline"
+                >
+                  Limpar seleção
+                </button>
                 <fieldset className="max-h-64 space-y-1 overflow-y-auto">
                   <legend className="sr-only">Supervisores</legend>
-                  {supervisoresDisponiveis.map(codigo => (
-                    <label key={codigo} className="flex cursor-pointer items-center gap-2 rounded p-1 text-sm hover:bg-[#FAF6EF]">
-                      <input type="checkbox" checked={supervisoresSelecionados.includes(codigo)} onChange={e => {
-                        const marcado = e.currentTarget.checked
-                        setSupervisoresSelecionados(atual => marcado ? [...atual, codigo] : atual.filter(c => c !== codigo))
-                      }} />{nomeResp(codigo)}
+                  {supervisoresDisponiveis.map((codigo) => (
+                    <label
+                      key={codigo}
+                      className="flex cursor-pointer items-center gap-2 rounded p-1 text-sm hover:bg-[#FAF6EF]"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={supervisoresSelecionados.includes(codigo)}
+                        onChange={(e) => {
+                          const marcado = e.currentTarget.checked
+                          setSupervisoresSelecionados((atual) =>
+                            marcado ? [...atual, codigo] : atual.filter((c) => c !== codigo),
+                          )
+                        }}
+                      />
+                      {nomeResp(codigo)}
                     </label>
                   ))}
-                  {supervisoresDisponiveis.length === 0 && <p className="text-sm">Nenhum supervisor disponível.</p>}
+                  {supervisoresDisponiveis.length === 0 && (
+                    <p className="text-sm">Nenhum supervisor disponível.</p>
+                  )}
                 </fieldset>
               </PopoverContent>
             </Popover>
@@ -743,31 +901,63 @@ export default function ConsultaDrillDown() {
 
         {mes === MES_TAG_PDV && (
           <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium">
-            <input type="checkbox" role="switch" checked={mostrarPdvs}
+            <input
+              type="checkbox"
+              role="switch"
+              checked={mostrarPdvs}
               className="h-4 w-4 accent-[#745322]"
-              onChange={e => { setEstadoPdvs('carregando'); setApenasNovosPdvs(e.currentTarget.checked) }} />
+              onChange={(e) => {
+                setEstadoPdvs('carregando')
+                setApenasNovosPdvs(e.currentTarget.checked)
+              }}
+            />
             Apenas novos PDVs
           </label>
         )}
         {mostrarPdvs && (
           <Card className="border-[#E5D9C8] bg-white">
             <CardContent className="space-y-3 pt-6">
-              <p className="text-sm text-[#7A6A5A]">PDVs marcados na comparação de outubro com setembro, incluindo lacunas e PDVs sem meta.</p>
-              {estadoPdvs === 'carregando' ? <p role="status">Carregando PDVs…</p>
-                : estadoPdvs === 'erro' ? <p role="alert">Não foi possível consultar as marcações de PDVs.</p>
-                : pdvsFiltrados.length === 0 ? <p>Nenhum PDV novo encontrado com os filtros selecionados.</p>
-                : <><p className="text-sm font-semibold">{pdvsFiltrados.length} PDV(s)</p>
+              <p className="text-sm text-[#7A6A5A]">
+                PDVs marcados na comparação de outubro com setembro, incluindo lacunas e PDVs sem
+                meta.
+              </p>
+              {estadoPdvs === 'carregando' ? (
+                <p role="status">Carregando PDVs…</p>
+              ) : estadoPdvs === 'erro' ? (
+                <p role="alert">Não foi possível consultar as marcações de PDVs.</p>
+              ) : pdvsFiltrados.length === 0 ? (
+                <p>Nenhum PDV novo encontrado com os filtros selecionados.</p>
+              ) : (
+                <>
+                  <p className="text-sm font-semibold">{pdvsFiltrados.length} PDV(s)</p>
                   <Table>
-                    <TableHeader><TableRow><TableHead>PDV</TableHead><TableHead>Supervisor</TableHead><TableHead>Promotor</TableHead><TableHead>Marcação</TableHead></TableRow></TableHeader>
-                    <TableBody>{pdvsFiltrados.map(pdv => (
-                      <TableRow key={pdv.cliente_codigo}>
-                        <TableCell>{pdv.cliente_nome} · {pdv.cliente_codigo}</TableCell>
-                        <TableCell>{nomeResp(pdv.supervisor_codigo)}</TableCell>
-                        <TableCell>{nomeResp(pdv.promotor_codigo)}</TableCell>
-                        <TableCell><Badge variant="outline">{pdv.tag_pdv === 'lacuna' ? 'Lacuna' : 'Novo na base'}</Badge></TableCell>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>PDV</TableHead>
+                        <TableHead>Supervisor</TableHead>
+                        <TableHead>Promotor</TableHead>
+                        <TableHead>Marcação</TableHead>
                       </TableRow>
-                    ))}</TableBody>
-                  </Table></>}
+                    </TableHeader>
+                    <TableBody>
+                      {pdvsFiltrados.map((pdv) => (
+                        <TableRow key={pdv.cliente_codigo}>
+                          <TableCell>
+                            {pdv.cliente_nome} · {pdv.cliente_codigo}
+                          </TableCell>
+                          <TableCell>{nomeResp(pdv.supervisor_codigo)}</TableCell>
+                          <TableCell>{nomeResp(pdv.promotor_codigo)}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {pdv.tag_pdv === 'lacuna' ? 'Lacuna' : 'Novo na base'}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </>
+              )}
             </CardContent>
           </Card>
         )}
@@ -778,221 +968,228 @@ export default function ConsultaDrillDown() {
           </div>
         )}
 
-        {!mostrarPdvs && (carregando ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="w-8 h-8 border-3 border-[#D99A2B] border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : (
-          <>
-            {/* Tabela de agregados (empresa/supervisor) */}
-            {aggsFiltrados.length > 0 && (
-              <Card className="border-[#E5D9C8] bg-white shadow-sm">
-                <CardContent className="pt-6">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-[#E5D9C8]">
-                        <TableHead className="text-[#7A6A5A]">Promotor</TableHead>
-                        {nivel === 'empresa' && (
-                          <TableHead className="text-[#7A6A5A]">Supervisor</TableHead>
-                        )}
-                        <TableHead className="text-[#7A6A5A] text-right">Combinações</TableHead>
-                        <TableHead className="text-[#7A6A5A] text-right">Meta Original</TableHead>
-                        <TableHead className="text-[#7A6A5A] text-right">GAP</TableHead>
-                        <TableHead className="text-[#7A6A5A] text-right">Meta Final</TableHead>
-                        <TableHead className="text-[#7A6A5A] text-center">Redistribuir</TableHead>
-                        <TableHead className="text-[#7A6A5A] text-center">Abrir</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {aggsFiltrados.map((r, i) => {
-                        const codigo = r.promotor
-                        return (
-                          <TableRow
-                            key={`${codigo ?? 'sem'}-${r.supervisor ?? 'sem'}-${i}`}
-                            className="border-[#E5D9C8] cursor-pointer hover:bg-[#FAF6EF]/60"
-                            onClick={() =>
-                              codigo &&
-                              (nivel === 'empresa'
-                                ? irParaPromotorDireto(codigo, r.supervisor)
-                                : irParaPromotor(codigo))
-                            }
-                          >
-                            <TableCell className="text-xs font-semibold">
-                              {nomeResp(r.promotor)}
-                            </TableCell>
-                            {nivel === 'empresa' && (
-                              <TableCell className="text-xs text-[#7A6A5A]">
-                                {nomeResp(r.supervisor)}
-                              </TableCell>
-                            )}
-                            <TableCell className="text-right font-mono text-xs">
-                              {fmtNum(r.n, 0)}
-                            </TableCell>
-                            <TableCell className="text-right font-mono text-xs">
-                              {fmtBRL(r.o)}
-                            </TableCell>
-                            <TableCell className="text-right font-mono text-xs">
-                              {fmtBRL(r.g)}
-                            </TableCell>
-                            <TableCell className="text-right font-mono text-xs font-semibold">
-                              {fmtBRL(r.f)}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {codigo && estado?.habilitado && Number(r.f)>0 && (
-                                <button type="button" onClick={e => {e.stopPropagation(); abrirAjuste({promotor:codigo,supervisor:r.supervisor ?? sup ?? null})}}
-                                  className="inline-flex items-center gap-1 rounded border px-2 py-1 text-xs">
-                                  <Shuffle className="w-3.5 h-3.5" /> Redistribuir
-                                </button>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <ChevronRight className="w-4 h-4 text-[#D99A2B] inline" />
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })}
-                      <TableRow className="border-[#E5D9C8] bg-[#FAF6EF]/60">
-                        <TableCell className="text-xs font-bold">Total</TableCell>
-                        {nivel === 'empresa' && <TableCell />}
-                        {(() => {
-                          const t = totAgg(aggsFiltrados)
-                          return (
-                            <>
-                              <TableCell className="text-right font-mono text-xs font-bold">
-                                {fmtBRL(t.o)}
-                              </TableCell>
-                              <TableCell className="text-right font-mono text-xs font-bold">
-                                {fmtBRL(t.g)}
-                              </TableCell>
-                              <TableCell className="text-right font-mono text-xs font-bold">
-                                {fmtBRL(t.f)}
-                              </TableCell>
-                            </>
-                          )
-                        })()}
-                        <TableCell />
-                        <TableCell />
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            )}
-            {nivel === 'empresa' &&
-              !carregando &&
-              aggs.length > 0 &&
-              aggsFiltrados.length === 0 && (
+        {!mostrarPdvs &&
+          (carregando ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="w-8 h-8 border-3 border-[#D99A2B] border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <>
+              {/* Tabela de agregados (empresa/supervisor) */}
+              {aggsFiltrados.length > 0 && (
                 <Card className="border-[#E5D9C8] bg-white shadow-sm">
-                  <CardContent className="py-10 text-center text-sm text-[#7A6A5A]">
-                    Nenhum promotor encontrado com os filtros selecionados.
+                  <CardContent className="pt-6">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-[#E5D9C8]">
+                          <TableHead className="text-[#7A6A5A]">Promotor</TableHead>
+                          {nivel === 'empresa' && (
+                            <TableHead className="text-[#7A6A5A]">Supervisor</TableHead>
+                          )}
+                          <TableHead className="text-[#7A6A5A] text-right">Combinações</TableHead>
+                          <TableHead className="text-[#7A6A5A] text-right">Meta Original</TableHead>
+                          <TableHead className="text-[#7A6A5A] text-right">GAP</TableHead>
+                          <TableHead className="text-[#7A6A5A] text-right">Meta Final</TableHead>
+                          <TableHead className="text-[#7A6A5A] text-center">Redistribuir</TableHead>
+                          <TableHead className="text-[#7A6A5A] text-center">Abrir</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {aggsFiltrados.map((r, i) => {
+                          const codigo = r.promotor
+                          return (
+                            <TableRow
+                              key={`${codigo ?? 'sem'}-${r.supervisor ?? 'sem'}-${i}`}
+                              className="border-[#E5D9C8] cursor-pointer hover:bg-[#FAF6EF]/60"
+                              onClick={() =>
+                                codigo &&
+                                (nivel === 'empresa'
+                                  ? irParaPromotorDireto(codigo, r.supervisor)
+                                  : irParaPromotor(codigo))
+                              }
+                            >
+                              <TableCell className="text-xs font-semibold">
+                                {nomeResp(r.promotor)}
+                              </TableCell>
+                              {nivel === 'empresa' && (
+                                <TableCell className="text-xs text-[#7A6A5A]">
+                                  {nomeResp(r.supervisor)}
+                                </TableCell>
+                              )}
+                              <TableCell className="text-right font-mono text-xs">
+                                {fmtNum(r.n, 0)}
+                              </TableCell>
+                              <TableCell className="text-right font-mono text-xs">
+                                {fmtBRL(r.o)}
+                              </TableCell>
+                              <TableCell className="text-right font-mono text-xs">
+                                {fmtBRL(r.g)}
+                              </TableCell>
+                              <TableCell className="text-right font-mono text-xs font-semibold">
+                                {fmtBRL(r.f)}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {codigo && estado?.habilitado && Number(r.f) > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      abrirAjuste({
+                                        promotor: codigo,
+                                        supervisor: r.supervisor ?? sup ?? null,
+                                      })
+                                    }}
+                                    className="inline-flex items-center gap-1 rounded border px-2 py-1 text-xs"
+                                  >
+                                    <Shuffle className="w-3.5 h-3.5" /> Redistribuir
+                                  </button>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <ChevronRight className="w-4 h-4 text-[#D99A2B] inline" />
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
+                        <TableRow className="border-[#E5D9C8] bg-[#FAF6EF]/60">
+                          <TableCell className="text-xs font-bold">Total</TableCell>
+                          {nivel === 'empresa' && <TableCell />}
+                          {(() => {
+                            const t = totAgg(aggsFiltrados)
+                            return (
+                              <>
+                                <TableCell className="text-right font-mono text-xs font-bold">
+                                  {fmtBRL(t.o)}
+                                </TableCell>
+                                <TableCell className="text-right font-mono text-xs font-bold">
+                                  {fmtBRL(t.g)}
+                                </TableCell>
+                                <TableCell className="text-right font-mono text-xs font-bold">
+                                  {fmtBRL(t.f)}
+                                </TableCell>
+                              </>
+                            )
+                          })()}
+                          <TableCell />
+                          <TableCell />
+                        </TableRow>
+                      </TableBody>
+                    </Table>
                   </CardContent>
                 </Card>
               )}
+              {nivel === 'empresa' &&
+                !carregando &&
+                aggs.length > 0 &&
+                aggsFiltrados.length === 0 && (
+                  <Card className="border-[#E5D9C8] bg-white shadow-sm">
+                    <CardContent className="py-10 text-center text-sm text-[#7A6A5A]">
+                      Nenhum promotor encontrado com os filtros selecionados.
+                    </CardContent>
+                  </Card>
+                )}
 
-            {/* Tabela de linhas (promotor) */}
-            {linhas.length > 0 && (
-              <Card className="border-[#E5D9C8] bg-white shadow-sm">
-                <CardContent className="pt-6">
-                  <p className="text-xs text-[#7A6A5A] mb-3">
-                    {linhas.length} combinações Cliente × SKU (limite de exibição: 300, ordenadas
-                    pela Meta Final) · Promotor: {nomeResp(prom)} · Supervisor: {nomeResp(sup)}
-                  </p>
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-[#E5D9C8]">
-                        <TableHead className="text-[#7A6A5A]">Cliente</TableHead>
-                        <TableHead className="text-[#7A6A5A]">Produto</TableHead>
-                        <TableHead className="text-[#7A6A5A]">Regime</TableHead>
-                        <TableHead className="text-[#7A6A5A] text-right">Meta Original</TableHead>
-                        <TableHead className="text-[#7A6A5A] text-right">GAP</TableHead>
-                        <TableHead className="text-[#7A6A5A] text-right">Meta Final</TableHead>
-                        <TableHead className="text-[#7A6A5A] text-center">Redistribuir</TableHead>
-                        <TableHead className="text-[#7A6A5A] text-center">Memória</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {linhas.map((l) => (
-                        <TableRow
-                          key={l.meta_linha_id}
-                          className="border-[#E5D9C8] cursor-pointer hover:bg-[#FAF6EF]/60"
-                          onClick={() =>
-                            setAberta(aberta?.meta_linha_id === l.meta_linha_id ? null : l)
-                          }
-                        >
-                          <TableCell className="text-xs">
-                            <span className="font-semibold">{l.cliente_nome ?? l.cliente}</span>
-                            <span className="text-[#7A6A5A] font-mono"> · {l.cliente}</span>
-                          </TableCell>
-                          <TableCell className="text-xs">
-                            <span className="font-semibold">{l.produto_nome ?? l.sku}</span>
-                            <span className="text-[#7A6A5A] font-mono"> · {l.sku}</span>
-                          </TableCell>
-                          <TableCell>
-                            <Badge className="bg-[#D99A2B]/10 text-[#D99A2B] border border-[#D99A2B]/30 text-[10px]">
-                              {REGIME_LABEL[l.regime] ?? l.regime}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right font-mono text-xs">
-                            {fmtBRL(l.meta_original)}
-                          </TableCell>
-                          <TableCell className="text-right font-mono text-xs">
-                            {Number(l.gap_linha) !== 0 ? (
-                              fmtBRL(l.gap_linha)
-                            ) : (
-                              <span className="text-[#7A6A5A]">—</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right font-mono text-xs font-semibold">
-                            {fmtBRL(l.meta_final)}
-
-                          </TableCell>
-                          <TableCell className="text-center whitespace-nowrap">
-                            {estado?.habilitado && l.promotor && (
-                              <div className="flex justify-center gap-2">
-                                <button
-                                  type="button"
-                                  className="rounded border px-2 py-1 text-xs"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    void abrirDetalhe(l, false)
-                                  }}
-                                >
-                                  Loja
-                                </button>
-                                {Number(l.meta_final) > 0 && (
+              {/* Tabela de linhas (promotor) */}
+              {linhas.length > 0 && (
+                <Card className="border-[#E5D9C8] bg-white shadow-sm">
+                  <CardContent className="pt-6">
+                    <p className="text-xs text-[#7A6A5A] mb-3">
+                      {linhas.length} combinações Cliente × SKU (limite de exibição: 300, ordenadas
+                      pela Meta Final) · Promotor: {nomeResp(prom)} · Supervisor: {nomeResp(sup)}
+                    </p>
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-[#E5D9C8]">
+                          <TableHead className="text-[#7A6A5A]">Cliente</TableHead>
+                          <TableHead className="text-[#7A6A5A]">Produto</TableHead>
+                          <TableHead className="text-[#7A6A5A]">Regime</TableHead>
+                          <TableHead className="text-[#7A6A5A] text-right">Meta Original</TableHead>
+                          <TableHead className="text-[#7A6A5A] text-right">GAP</TableHead>
+                          <TableHead className="text-[#7A6A5A] text-right">Meta Final</TableHead>
+                          <TableHead className="text-[#7A6A5A] text-center">Redistribuir</TableHead>
+                          <TableHead className="text-[#7A6A5A] text-center">Memória</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {linhas.map((l) => (
+                          <TableRow
+                            key={l.meta_linha_id}
+                            className="border-[#E5D9C8] cursor-pointer hover:bg-[#FAF6EF]/60"
+                            onClick={() =>
+                              setAberta(aberta?.meta_linha_id === l.meta_linha_id ? null : l)
+                            }
+                          >
+                            <TableCell className="text-xs">
+                              <span className="font-semibold">{l.cliente_nome ?? l.cliente}</span>
+                              <span className="text-[#7A6A5A] font-mono"> · {l.cliente}</span>
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              <span className="font-semibold">{l.produto_nome ?? l.sku}</span>
+                              <span className="text-[#7A6A5A] font-mono"> · {l.sku}</span>
+                            </TableCell>
+                            <TableCell>
+                              <Badge className="bg-[#D99A2B]/10 text-[#D99A2B] border border-[#D99A2B]/30 text-[10px]">
+                                {REGIME_LABEL[l.regime] ?? l.regime}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-xs">
+                              {fmtBRL(l.meta_original)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-xs">
+                              {Number(l.gap_linha) !== 0 ? (
+                                fmtBRL(l.gap_linha)
+                              ) : (
+                                <span className="text-[#7A6A5A]">—</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-xs font-semibold">
+                              {fmtBRL(l.meta_final)}
+                            </TableCell>
+                            <TableCell className="text-center whitespace-nowrap">
+                              {estado?.habilitado && l.promotor && (
+                                <div className="flex justify-center gap-2">
                                   <button
                                     type="button"
                                     className="rounded border px-2 py-1 text-xs"
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      void abrirDetalhe(l, true)
+                                      void abrirDetalhe(l, false)
                                     }}
                                   >
-                                    Produto
+                                    Loja
                                   </button>
-                                )}
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Calculator className="w-4 h-4 text-[#D99A2B] inline" />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            )}
+                                  {Number(l.meta_final) > 0 && (
+                                    <button
+                                      type="button"
+                                      className="rounded border px-2 py-1 text-xs"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        void abrirDetalhe(l, true)
+                                      }}
+                                    >
+                                      Produto
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Calculator className="w-4 h-4 text-[#D99A2B] inline" />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              )}
 
-            {aberta && <MemoriaPanel linha={aberta} onClose={() => setAberta(null)} />}
-          </>
-        ))}
+              {aberta && <MemoriaPanel linha={aberta} onClose={() => setAberta(null)} />}
+            </>
+          ))}
 
         <div className="flex items-center justify-between text-xs text-[#7A6A5A]">
-          <span>
-            Fonte: motor oficial T5.x + GAP descido T6.1/T6.3 · Ciclo {mes}
-          </span>
+          <span>Fonte: motor oficial T5.x + GAP descido T6.1/T6.3 · Ciclo {mes}</span>
           <button
             onClick={carregar}
             className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-[#E5D9C8] font-semibold hover:bg-white transition-colors"
