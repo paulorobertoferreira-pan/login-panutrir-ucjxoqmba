@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { centavos } from '@/lib/redistribuicao'
 
 const MES_AJUSTE = '2026-10'
@@ -233,6 +234,7 @@ export default function ConsultaDrillDown() {
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState<string | null>(null)
   const [filtroPromotor, setFiltroPromotor] = useState('')
+  const [supervisoresSelecionados, setSupervisoresSelecionados] = useState<string[]>([])
   // Meta Diretoria do ciclo publicado e o total já alocado (Σ Meta Final), vindos do banco
   const [rascunho, setRascunho] = useState<Rascunho | null>(null)
   const [alvo, setAlvo] = useState<Alvo | null>(null)
@@ -493,23 +495,13 @@ export default function ConsultaDrillDown() {
   }
 
   const filtroNorm = filtroPromotor.trim().toLowerCase()
-  const aggsFiltrados =
-    nivel === 'empresa' && filtroNorm
-      ? aggs.filter((r) => {
-          const rotuloProm = (r.promotor && nomes[r.promotor]) || r.promotor || ''
-          const rotuloSup = (r.supervisor && nomes[r.supervisor]) || r.supervisor || ''
-          return (
-            rotuloProm.toLowerCase().includes(filtroNorm) ||
-            String(r.promotor ?? '')
-              .toLowerCase()
-              .includes(filtroNorm) ||
-            rotuloSup.toLowerCase().includes(filtroNorm) ||
-            String(r.supervisor ?? '')
-              .toLowerCase()
-              .includes(filtroNorm)
-          )
-        })
-      : aggs
+  const supervisoresDisponiveis = [...new Set(aggs.flatMap(r => r.supervisor ? [r.supervisor] : []))]
+    .sort((a, b) => nomeResp(a).localeCompare(nomeResp(b), 'pt-BR'))
+  const aggsFiltrados = nivel === 'empresa' ? aggs.filter(r => {
+    if (supervisoresSelecionados.length && !supervisoresSelecionados.includes(r.supervisor ?? '')) return false
+    const promotor = r.promotor ?? ''
+    return !filtroNorm || `${nomes[promotor] ?? ''} ${promotor}`.toLowerCase().includes(filtroNorm)
+  }) : aggs
 
   const totAgg = (rows: AggRow[]) => ({
     o: rows.reduce((s, r) => s + Number(r.o ?? 0), 0),
@@ -732,12 +724,13 @@ export default function ConsultaDrillDown() {
 
         {/* Filtro de promotor (topo da tela, nível empresa) */}
         {nivel === 'empresa' && (
-          <div className="relative max-w-md">
+          <div className="flex flex-wrap items-start gap-3">
+          <div className="relative w-full max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7A6A5A] pointer-events-none" />
             <Input
               value={filtroPromotor}
               onChange={(e) => setFiltroPromotor(e.target.value)}
-              placeholder="Filtrar por promotor ou supervisor..."
+              placeholder="Buscar promotor…"
               className="pl-9 bg-white border-[#E5D9C8] text-sm text-[#2C1E12] placeholder:text-[#7A6A5A] focus-visible:ring-[#D99A2B]"
             />
             {filtroPromotor && (
@@ -749,6 +742,29 @@ export default function ConsultaDrillDown() {
                 <X className="w-3.5 h-3.5 text-[#7A6A5A]" />
               </button>
             )}
+          </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button type="button" className="rounded-lg border border-[#E5D9C8] bg-white px-3 py-2 text-sm">
+                  Supervisores: {supervisoresSelecionados.length ? `${supervisoresSelecionados.length} selecionado(s)` : 'Todos'} ▾
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="start" aria-label="Filtrar supervisores" className="w-80">
+                <button type="button" onClick={() => setSupervisoresSelecionados([])} className="mb-2 text-sm underline">Limpar seleção</button>
+                <fieldset className="max-h-64 space-y-1 overflow-y-auto">
+                  <legend className="sr-only">Supervisores</legend>
+                  {supervisoresDisponiveis.map(codigo => (
+                    <label key={codigo} className="flex cursor-pointer items-center gap-2 rounded p-1 text-sm hover:bg-[#FAF6EF]">
+                      <input type="checkbox" checked={supervisoresSelecionados.includes(codigo)} onChange={e => {
+                        const marcado = e.currentTarget.checked
+                        setSupervisoresSelecionados(atual => marcado ? [...atual, codigo] : atual.filter(c => c !== codigo))
+                      }} />{nomeResp(codigo)}
+                    </label>
+                  ))}
+                  {supervisoresDisponiveis.length === 0 && <p className="text-sm">Nenhum supervisor disponível.</p>}
+                </fieldset>
+              </PopoverContent>
+            </Popover>
           </div>
         )}
 
@@ -893,7 +909,7 @@ export default function ConsultaDrillDown() {
               aggsFiltrados.length === 0 && (
                 <Card className="border-[#E5D9C8] bg-white shadow-sm">
                   <CardContent className="py-10 text-center text-sm text-[#7A6A5A]">
-                    Nenhum promotor encontrado para “{filtroPromotor}”.
+                    Nenhum promotor encontrado com os filtros selecionados.
                   </CardContent>
                 </Card>
               )}
