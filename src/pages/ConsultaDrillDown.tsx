@@ -611,7 +611,11 @@ export default function ConsultaDrillDown() {
                                     )
                                   }}
                                   className="inline-flex items-center gap-1 rounded-md border border-[#D99A2B]/50 px-2 py-1 text-xs text-[#745322] hover:bg-[#FAF6EF]"
-                                  title={saldoEsgotado ? 'Toda a meta já está alocada: só é possível retirar meta deste promotor' : 'Há meta a alocar: é possível colocar meta neste promotor'}
+                                  title={
+                                    saldoEsgotado
+                                      ? 'Toda a meta já está alocada: só é possível retirar meta deste promotor'
+                                      : 'Há meta a alocar: é possível colocar meta neste promotor'
+                                  }
                                 >
                                   <Shuffle className="w-3.5 h-3.5" />
                                   {saldoEsgotado ? 'Retirar' : 'Colocar'}

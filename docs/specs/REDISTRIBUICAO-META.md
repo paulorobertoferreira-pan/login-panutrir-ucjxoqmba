@@ -9,13 +9,13 @@ O usuário pode **mover parte da meta** de uma unidade (loja, supervisor ou prom
 
 ## 2. Regras de negócio (decisões do Alex)
 
-| # | Regra | Origem |
-|---|---|---|
-| R1 | A **soma das metas finais** do ciclo fica **exatamente igual** à Meta Diretoria. Não pode passar e não pode diminuir. | Alex, 20/11 (pergunta 1 e 2) |
-| R2 | Uma meta inexistente ou zerada só pode ser criada para um **novo cliente**. | Alex, 20/11 (pergunta 1) |
-| R3 | Para cada movimento que cria meta em um novo cliente, o valor **sai de outras unidades** (a soma não muda). | Alex, 20/11 (pergunta 2) |
-| R4 | A redistribuição **não edita número final**. Ela entra como **versão de parâmetros versionada** (RN-07 / M-31). | PRD RN-07; AGENTS |
-| R5 | A versão nasce como rascunho com autor e motivo; passa pela execução, reconciliação e aprovação como qualquer ciclo. | SPEC-2-004 |
+| #   | Regra                                                                                                                 | Origem                       |
+| --- | --------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| R1  | A **soma das metas finais** do ciclo fica **exatamente igual** à Meta Diretoria. Não pode passar e não pode diminuir. | Alex, 20/11 (pergunta 1 e 2) |
+| R2  | Uma meta inexistente ou zerada só pode ser criada para um **novo cliente**.                                           | Alex, 20/11 (pergunta 1)     |
+| R3  | Para cada movimento que cria meta em um novo cliente, o valor **sai de outras unidades** (a soma não muda).           | Alex, 20/11 (pergunta 2)     |
+| R4  | A redistribuição **não edita número final**. Ela entra como **versão de parâmetros versionada** (RN-07 / M-31).       | PRD RN-07; AGENTS            |
+| R5  | A versão nasce como rascunho com autor e motivo; passa pela execução, reconciliação e aprovação como qualquer ciclo.  | SPEC-2-004                   |
 
 ## 3. Cliente novo (decisão do Alex)
 
