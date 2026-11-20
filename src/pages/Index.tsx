@@ -85,16 +85,6 @@ export default function Index() {
     setPasswordError(validatePassword(password))
   }
 
-  const handleFillDemo = () => {
-    setEmail('paulo.ferreira@panutrir.com.br')
-    setPassword('HrFvYsnnW5Hv4Jqo23Mc')
-    setEmailTouched(true)
-    setPasswordTouched(true)
-    setEmailError('')
-    setPasswordError('')
-    setFormError(null)
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const eErr = validateEmail(email)
@@ -183,18 +173,6 @@ export default function Index() {
 
       {/* Painel Direito - Login */}
       <div className="w-full lg:w-[45%] min-h-screen flex flex-col px-6 pt-6 sm:px-10 lg:px-14 bg-[#FAF6EF]">
-        <div className="w-full max-w-[420px] flex items-center justify-end">
-          <button
-            type="button"
-            onClick={handleFillDemo}
-            className="text-xs text-[#7A6A5A] hover:text-[#D99A2B] font-medium flex items-center gap-1.5 py-1 px-2.5 rounded-full hover:bg-black/5 transition-colors border border-transparent hover:border-[#E5D9C8]"
-            title="Preencher com usuário de teste criado na migração"
-          >
-            <CheckCircle className="w-3.5 h-3.5 text-[#D99A2B]" />
-            <span>Preencher conta de teste</span>
-          </button>
-        </div>
-
         {/* Container Centralizado de 420px */}
         <div className="w-full max-w-[420px] my-auto space-y-7 animate-in fade-in slide-in-from-bottom-5 duration-700 ease-out">
           {/* Logo exibido no mobile acima do título */}
@@ -308,28 +286,6 @@ export default function Index() {
               )}
             </Button>
           </form>
-
-          {/* Acesso de teste interno */}
-          <div className="pt-2 border-t border-[#E5D9C8]">
-            <div className="flex items-center justify-between gap-2 rounded-xl bg-[#FAF6EF] border border-[#E5D9C8] px-4 py-3">
-              <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[#7A6A5A] flex items-center gap-1">
-                  <KeyRound className="w-3 h-3 text-[#D99A2B]" />
-                  Acesso de teste interno
-                </p>
-                <p className="text-xs text-[#7A6A5A] font-mono truncate mt-0.5">
-                  paulo.ferreira@panutrir.com.br • (senha com o Paulo)
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={handleFillDemo}
-                className="shrink-0 text-xs font-semibold text-[#D99A2B] hover:text-[#C4881F] px-3 py-1.5 rounded-lg hover:bg-[#D99A2B]/10 transition-colors"
-              >
-                Usar credenciais
-              </button>
-            </div>
-          </div>
         </div>
 
         <p className="w-full max-w-[420px] pb-6 text-center text-[11px] text-[#7A6A5A]/70">
