@@ -30,39 +30,12 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/compone
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { centavos } from '@/lib/redistribuicao'
 
-const MES_AJUSTE = '2026-10'
-type Alvo = {
-  promotor: string
-  supervisor: string | null
-  meta: number
-  cliente?: string
-  sku?: string
-  nome?: string
-}
-type Delta = {
-  promotor: string
-  supervisor: string | null
-  ajuste: number
-  cliente?: string
-  sku?: string
-}
-type Rascunho = {
-  saldo: number
-  alocado: number
-  grupos: Delta[]
-  lojas: Delta[]
-  produtos: Delta[]
-  meta_alvo?: number
-}
-async function consultarAjuste(args: Record<string, string | null> = {}) {
-  const db = supabase as unknown as {
-    rpc: (
-      nome: string,
-      args: Record<string, string | null>,
-    ) => PromiseLike<{ data: Rascunho | null; error: { message: string } | null }>
-  }
-  const { data, error } = await db.rpc('ajustar_meta_rascunho', { p_mes: MES_AJUSTE, ...args })
-  if (!data || error) throw new Error(error?.message ?? 'Não foi possível consultar o rascunho.')
+type Alvo = { promotor: string; supervisor: string | null; cliente?: string; sku?: string; nome?: string }
+type EstadoAjuste = { habilitado: boolean; revisao?: number; motivo?: string }
+async function consultarAjuste(mes: string, args: Record<string, unknown> = {}) {
+  const db = supabase as unknown as { rpc: (nome: string, args: Record<string, unknown>) => PromiseLike<{data: EstadoAjuste | null; error: {message: string} | null}> }
+  const {data,error} = await db.rpc('transferir_meta_vigente', {p_mes: mes, ...args})
+  if (error || !data) throw new Error(error?.message ?? 'Não foi possível consultar o ajuste.')
   return data
 }
 
@@ -235,119 +208,74 @@ export default function ConsultaDrillDown() {
   const [erro, setErro] = useState<string | null>(null)
   const [filtroPromotor, setFiltroPromotor] = useState('')
   const [supervisoresSelecionados, setSupervisoresSelecionados] = useState<string[]>([])
-  // Meta Diretoria do ciclo publicado e o total já alocado (Σ Meta Final), vindos do banco
-  const [rascunho, setRascunho] = useState<Rascunho | null>(null)
+  const [mes, setMes] = useState('2026-10')
+  const [ciclos, setCiclos] = useState<string[]>([])
+  const [estado, setEstado] = useState<EstadoAjuste | null>(null)
+  const [contrapartes, setContrapartes] = useState<AggRow[]>([])
   const [alvo, setAlvo] = useState<Alvo | null>(null)
+  const [contraparte, setContraparte] = useState('')
+  const [acao, setAcao] = useState('adicionar')
   const [valorAjuste, setValorAjuste] = useState('')
   const [motivoAjuste, setMotivoAjuste] = useState('')
   const [erroAjuste, setErroAjuste] = useState('')
   const [avisoAjuste, setAvisoAjuste] = useState('')
   const [salvando, setSalvando] = useState(false)
-  const ajusteDoAlvo = (a: Alvo) => {
-    const deltas = a.sku ? rascunho?.produtos : a.cliente ? rascunho?.lojas : rascunho?.grupos
-    return Number(
-      deltas?.find(
-        (g) =>
-          g.promotor === a.promotor &&
-          g.supervisor === a.supervisor &&
-          g.cliente === a.cliente &&
-          g.sku === a.sku,
-      )?.ajuste ?? 0,
-    )
-  }
-  const ajusteDe = (promotor: string, supervisor: string | null) =>
-    ajusteDoAlvo({ promotor, supervisor, meta: 0 })
-  const [abrindo, setAbrindo] = useState(false)
-  async function abrirDetalhe(l: LinhaRow, porProduto: boolean) {
-    if (!l.promotor || abrindo) return
-    setAbrindo(true)
-    setAvisoAjuste('')
-    setErroAjuste('')
-    try {
-      const r = await consultarAjuste({
-        p_promotor: l.promotor,
-        p_supervisor: l.supervisor,
-        p_cliente: l.cliente,
-        p_sku: porProduto ? l.sku : null,
-      })
-      setRascunho(r)
-      if (Number(r.meta_alvo) <= 0)
-        throw new Error(
-          'Este destino não tem meta positiva. A primeira meta exige o fluxo de PDV novo.',
-        )
-      setValorAjuste('')
-      setMotivoAjuste('')
-      setAlvo({
-        promotor: l.promotor,
-        supervisor: l.supervisor,
-        cliente: l.cliente,
-        sku: porProduto ? l.sku : undefined,
-        nome: porProduto
-          ? `${l.cliente_nome ?? l.cliente} · ${l.produto_nome ?? l.sku}`
-          : (l.cliente_nome ?? l.cliente),
-        meta: Number(r.meta_alvo),
-      })
-    } catch (e) {
-      setAvisoAjuste(e instanceof Error ? e.message : 'Não foi possível abrir o ajuste.')
-    } finally {
-      setAbrindo(false)
-    }
-  }
-  const retirar = (rascunho?.saldo ?? 0) <= 0
-  const limite = alvo && rascunho ? (retirar ? alvo.meta + ajusteDoAlvo(alvo) : rascunho.saldo) : 0
 
   useEffect(() => {
-    if (!user || !session) {
-      setRascunho(null)
-      return
-    }
+    if (!user || !session) return
     let ativo = true
-    void consultarAjuste().then(
-      (r) => {
-        if (ativo) setRascunho(r)
-      },
-      () => {
-        if (ativo) setRascunho(null)
-      },
-    )
-    return () => {
-      ativo = false
-    }
+    void supabase.from('ciclo_meta').select('mes_referencia').eq('status','publicado')
+      .order('mes_referencia', {ascending: false}).then(({data,error}) => {
+        if (!ativo || error || !data?.length) return
+        setCiclos(data.map(c => c.mes_referencia)); setMes(data[0].mes_referencia)
+      })
+    return () => { ativo = false }
   }, [user, session])
+  useEffect(() => {
+    if (!user || !session) return
+    let ativo = true
+    setEstado(null); setContrapartes([])
+    void consultarAjuste(mes).then(async r => {
+      if (ativo) setEstado(r)
+      if (!r.habilitado) return
+      const {data,error} = await supabase.from('vw_meta_promotor').select('supervisor,promotor,f:meta_final')
+        .eq('referencia_ciclo',mes).gt('meta_final',0).order('promotor').order('supervisor')
+      if (ativo && !error) setContrapartes((data ?? []) as AggRow[])
+    }).catch(() => { if (ativo) setEstado(null) })
+    return () => { ativo = false }
+  }, [mes, user, session])
 
+  function abrirAjuste(a: Alvo) {
+    setValorAjuste(''); setMotivoAjuste(''); setErroAjuste(''); setAvisoAjuste('')
+    setContraparte(''); setAcao('adicionar'); setAlvo(a)
+  }
+  function abrirDetalhe(l: LinhaRow, porProduto: boolean) {
+    if (!l.promotor) return
+    abrirAjuste({promotor:l.promotor, supervisor:l.supervisor, cliente:l.cliente,
+      sku:porProduto ? l.sku : undefined, nome:porProduto ? `${l.cliente_nome ?? l.cliente} · ${l.produto_nome ?? l.sku}` : l.cliente_nome ?? l.cliente})
+  }
   async function salvarAjuste(e: React.FormEvent) {
     e.preventDefault()
-    if (!alvo || !rascunho || salvando) return
-    setSalvando(true)
-    setErroAjuste('')
+    if (!alvo || !estado?.habilitado || salvando || contraparte === '') return
+    setSalvando(true); setErroAjuste('')
     try {
       const valor = centavos(valorAjuste)
-      if (valor <= 0n || valor > centavos(Math.round(limite * 100) / 100))
-        throw new Error('Informe um valor positivo dentro do limite indicado.')
-      setRascunho(
-        await consultarAjuste({
-          p_promotor: alvo.promotor,
-          p_supervisor: alvo.supervisor,
-          p_cliente: alvo.cliente ?? null,
-          p_sku: alvo.sku ?? null,
-          p_acao: retirar ? 'retirar' : 'colocar',
-          p_valor: (Number(valor) / 100).toFixed(2),
-          p_motivo: motivoAjuste.trim(),
-          p_saldo_esperado: String(rascunho.saldo),
-        }),
-      )
-      setAlvo(null)
-      setAvisoAjuste('Ajuste salvo no rascunho. A meta publicada não mudou.')
+      if (valor <= 0n) throw new Error('Informe um valor positivo.')
+      const outro = contrapartes[Number(contraparte)]
+      if (!outro?.promotor) throw new Error('Selecione a contraparte.')
+      const unidade = {promotor:alvo.promotor, supervisor:alvo.supervisor, cliente:alvo.cliente, sku:alvo.sku}
+      const contraria = {promotor:outro.promotor, supervisor:outro.supervisor ?? null}
+      const r = await consultarAjuste(mes,{p_origem: acao === 'adicionar' ? contraria : unidade,
+        p_destino: acao === 'adicionar' ? unidade : contraria,
+        p_valor: `${valor / 100n}.${String(valor % 100n).padStart(2,'0')}`,
+        p_motivo:motivoAjuste.trim(),p_revisao:estado.revisao})
+      if (!r.habilitado) throw new Error(r.motivo ?? 'Ciclo não habilitado.')
+      setEstado(r); setAlvo(null); setAvisoAjuste('Transferência aplicada à meta vigente. A Meta Diretoria não mudou.')
+      await carregar()
     } catch (erro) {
       setErroAjuste(erro instanceof Error ? erro.message : 'Não foi possível salvar.')
-      try {
-        setRascunho(await consultarAjuste())
-      } catch {
-        /* preserva a mensagem de erro */
-      }
-    } finally {
-      setSalvando(false)
-    }
+      try { setEstado(await consultarAjuste(mes)); await carregar() } catch { /* mantém o erro */ }
+    } finally { setSalvando(false) }
   }
 
   useEffect(() => {
@@ -364,7 +292,7 @@ export default function ConsultaDrillDown() {
           supabase
             .from('vw_meta_regime')
             .select('regime, n:combinacoes, o:meta_original, g:gap_linha, f:meta_final')
-            .eq('referencia_ciclo', '2026-10')
+            .eq('referencia_ciclo', mes)
             .order('regime'),
           // Nível promotor: cada linha traz também o supervisor a que pertence
           supabase
@@ -372,7 +300,7 @@ export default function ConsultaDrillDown() {
             .select(
               'supervisor, promotor, n:combinacoes, c:clientes, o:meta_original, g:gap_linha, f:meta_final',
             )
-            .eq('referencia_ciclo', '2026-10')
+            .eq('referencia_ciclo', mes)
             .order('meta_final', { ascending: false }),
         ])
         if (regR.error) throw regR.error
@@ -396,7 +324,7 @@ export default function ConsultaDrillDown() {
         const { data, error } = await supabase
           .from('vw_meta_promotor')
           .select('promotor, n:combinacoes, c:clientes, o:meta_original, g:gap_linha, f:meta_final')
-          .eq('referencia_ciclo', '2026-10')
+          .eq('referencia_ciclo', mes)
           .eq('supervisor', sup)
           .order('meta_final', { ascending: false })
         if (error) throw error
@@ -404,9 +332,9 @@ export default function ConsultaDrillDown() {
         setLinhas([])
       } else if (nivel === 'promotor' && sup && prom) {
         const { data, error } = await supabase
-          .from('meta_linha')
+          .from('vw_meta_linha_vigente' as 'meta_linha')
           .select('*')
-          .eq('referencia_ciclo', '2026-10')
+          .eq('referencia_ciclo', mes)
           .eq('supervisor', sup)
           .eq('promotor', prom)
           .order('meta_final', { ascending: false })
@@ -419,7 +347,7 @@ export default function ConsultaDrillDown() {
       setErro(e instanceof Error ? e.message : String(e))
     }
     setCarregando(false)
-  }, [nivel, sup, prom])
+  }, [nivel, sup, prom, mes])
 
   useEffect(() => {
     if (user && session) carregar()
@@ -517,27 +445,24 @@ export default function ConsultaDrillDown() {
           if (!aberto && !salvando) setAlvo(null)
         }}
       >
-        {alvo && rascunho && (
+        {alvo && (
           <DialogContent>
-            <DialogTitle>
-              {retirar ? 'Retirar meta' : 'Colocar meta'} — {alvo.nome ?? nomeResp(alvo.promotor)}
-            </DialogTitle>
-            <DialogDescription>
-              O ajuste fica salvo no rascunho do ciclo. A meta publicada não muda.
-            </DialogDescription>
-            <div className="space-y-1 text-sm">
-              <p>
-                Meta {alvo.sku ? 'do produto' : alvo.cliente ? 'da loja' : 'do promotor'} no
-                rascunho: <strong>{fmtBRL(alvo.meta + ajusteDoAlvo(alvo))}</strong>
-              </p>
-              <p>
-                Saldo da empresa a alocar: <strong>{fmtBRL(rascunho.saldo)}</strong>
-              </p>
-              <p>
-                Limite para este ajuste: <strong>{fmtBRL(limite)}</strong>
-              </p>
-            </div>
+            <DialogTitle>Redistribuir meta — {alvo.nome ?? nomeResp(alvo.promotor)}</DialogTitle>
+            <DialogDescription>Ao salvar, o valor sai da origem e entra no destino imediatamente. A Meta Diretoria não muda.</DialogDescription>
             <form className="space-y-3" onSubmit={salvarAjuste}>
+              <label className="block">Operação
+                <select className="block w-full rounded border p-2" value={acao} onChange={e => setAcao(e.target.value)} disabled={salvando}>
+                  <option value="adicionar">Adicionar meta</option><option value="retirar">Retirar meta</option>
+                </select>
+              </label>
+              <label className="block">{acao === 'adicionar' ? 'Retirar de qual promotor?' : 'Transferir para qual promotor?'}
+                <select className="block w-full rounded border p-2" required value={contraparte} onChange={e => setContraparte(e.target.value)} disabled={salvando}>
+                  <option value="">Selecione um promotor</option>
+                  {contrapartes.map((r,i) => r.promotor && (r.promotor !== alvo.promotor || (r.supervisor ?? null) !== alvo.supervisor) && (
+                    <option key={i} value={i}>{nomeResp(r.promotor)} · {nomeResp(r.supervisor)}</option>
+                  ))}
+                </select>
+              </label>
               <label className="block">
                 Valor (R$)
                 <Input
@@ -575,7 +500,7 @@ export default function ConsultaDrillDown() {
                 </button>
                 <button
                   className="rounded-lg bg-[#745322] px-3 py-2 text-white disabled:opacity-50"
-                  disabled={salvando || limite <= 0 || !motivoAjuste.trim()}
+                  disabled={salvando || !estado?.habilitado || contraparte === '' || !motivoAjuste.trim()}
                 >
                   {salvando ? 'Salvando…' : 'Salvar ajuste'}
                 </button>
@@ -617,7 +542,7 @@ export default function ConsultaDrillDown() {
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6 animate-fade-in">
         <div className="space-y-2">
           <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight">
-            Consulta Drill-down — Ciclo Out/26
+            Consulta Drill-down — Ciclo {mes}
           </h1>
           <p className="font-sans text-sm text-[#7A6A5A] max-w-3xl">
             Navegue de Empresa a Cliente × SKU. Cada linha abre a memória de cálculo que explica o
@@ -625,6 +550,16 @@ export default function ConsultaDrillDown() {
             precisar da planilha.
           </p>
         </div>
+
+        <label className="block text-sm">Ciclo publicado
+          <select className="ml-2 rounded border bg-white p-2" value={mes} disabled={salvando} onChange={e => {
+            setMes(e.target.value); setEstado(null); setAlvo(null); setNivel('empresa'); setSup(null); setProm(null);
+            setAggs([]); setLinhas([]); setRegimes([]); setTotais(null); setSupervisoresSelecionados([]); setAvisoAjuste('')
+          }}>
+            {(ciclos.length ? ciclos : [mes]).map(c => <option key={c}>{c}</option>)}
+          </select>
+        </label>
+        {estado?.motivo && <p className="text-sm text-[#7A6A5A]">{estado.motivo}</p>}
 
         {/* Breadcrumb */}
         <div className="flex items-center gap-1.5 text-xs font-semibold flex-wrap">
@@ -834,41 +769,12 @@ export default function ConsultaDrillDown() {
                               {fmtBRL(r.f)}
                             </TableCell>
                             <TableCell className="text-center">
-                              {codigo && rascunho && Number(r.f) > 0 && (
-                                <button
-                                  type="button"
-                                  disabled={
-                                    retirar &&
-                                    Number(r.f) + ajusteDe(codigo, r.supervisor ?? sup ?? null) <= 0
-                                  }
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    setValorAjuste('')
-                                    setMotivoAjuste('')
-                                    setErroAjuste('')
-                                    setAvisoAjuste('')
-                                    setAlvo({
-                                      promotor: codigo,
-                                      supervisor: r.supervisor ?? sup ?? null,
-                                      meta: Number(r.f),
-                                    })
-                                  }}
-                                  className="inline-flex items-center gap-1 rounded-md border border-[#D99A2B]/50 px-2 py-1 text-xs text-[#745322] hover:bg-[#FAF6EF] disabled:opacity-50"
-                                >
-                                  <Shuffle className="w-3.5 h-3.5" />
-                                  {retirar ? 'Retirar' : 'Colocar'}
+                              {codigo && estado?.habilitado && Number(r.f)>0 && (
+                                <button type="button" onClick={e => {e.stopPropagation(); abrirAjuste({promotor:codigo,supervisor:r.supervisor ?? sup ?? null})}}
+                                  className="inline-flex items-center gap-1 rounded border px-2 py-1 text-xs">
+                                  <Shuffle className="w-3.5 h-3.5" /> Redistribuir
                                 </button>
                               )}
-                              {codigo &&
-                                rascunho &&
-                                ajusteDe(codigo, r.supervisor ?? sup ?? null) !== 0 && (
-                                  <div className="mt-1 text-xs">
-                                    Rascunho:{' '}
-                                    {fmtBRL(
-                                      Number(r.f) + ajusteDe(codigo, r.supervisor ?? sup ?? null),
-                                    )}
-                                  </div>
-                                )}
                             </TableCell>
                             <TableCell className="text-center">
                               <ChevronRight className="w-4 h-4 text-[#D99A2B] inline" />
@@ -969,54 +875,31 @@ export default function ConsultaDrillDown() {
                           </TableCell>
                           <TableCell className="text-right font-mono text-xs font-semibold">
                             {fmtBRL(l.meta_final)}
-                            {l.promotor &&
-                              ajusteDoAlvo({
-                                promotor: l.promotor,
-                                supervisor: l.supervisor,
-                                cliente: l.cliente,
-                                sku: l.sku,
-                                meta: 0,
-                              }) !== 0 && (
-                                <div>
-                                  Rascunho:{' '}
-                                  {fmtBRL(
-                                    Number(l.meta_final) +
-                                      ajusteDoAlvo({
-                                        promotor: l.promotor,
-                                        supervisor: l.supervisor,
-                                        cliente: l.cliente,
-                                        sku: l.sku,
-                                        meta: 0,
-                                      }),
-                                  )}
-                                </div>
-                              )}
+
                           </TableCell>
                           <TableCell className="text-center whitespace-nowrap">
-                            {rascunho && l.promotor && (
+                            {estado?.habilitado && l.promotor && (
                               <div className="flex justify-center gap-2">
                                 <button
                                   type="button"
-                                  disabled={abrindo}
                                   className="rounded border px-2 py-1 text-xs"
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     void abrirDetalhe(l, false)
                                   }}
                                 >
-                                  {retirar ? 'Retirar da loja' : 'Colocar na loja'}
+                                  Loja
                                 </button>
                                 {Number(l.meta_final) > 0 && (
                                   <button
                                     type="button"
-                                    disabled={abrindo}
                                     className="rounded border px-2 py-1 text-xs"
                                     onClick={(e) => {
                                       e.stopPropagation()
                                       void abrirDetalhe(l, true)
                                     }}
                                   >
-                                    {retirar ? 'Retirar do produto' : 'Colocar no produto'}
+                                    Produto
                                   </button>
                                 )}
                               </div>
@@ -1039,8 +922,7 @@ export default function ConsultaDrillDown() {
 
         <div className="flex items-center justify-between text-xs text-[#7A6A5A]">
           <span>
-            Fonte: motor oficial T5.x + GAP descido T6.1/T6.3 · Ciclo 2026-10 · Universo provisório
-            (−0,23% + carteiras pós-set/26)
+            Fonte: motor oficial T5.x + GAP descido T6.1/T6.3 · Ciclo {mes}
           </span>
           <button
             onClick={carregar}
