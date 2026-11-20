@@ -26,6 +26,17 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { centavos } from '@/lib/redistribuicao'
+
+const MES_AJUSTE = '2026-10'
+type Rascunho = { saldo: number; alocado: number; grupos: { promotor: string; supervisor: string | null; ajuste: number }[] }
+async function consultarAjuste(args: Record<string, string | null> = {}) {
+  const db = supabase as unknown as { rpc: (nome: string, args: Record<string, string | null>) => PromiseLike<{ data: Rascunho | null; error: { message: string } | null }> }
+  const { data, error } = await db.rpc('ajustar_meta_promotor_rascunho', { p_mes: MES_AJUSTE, ...args })
+  if (!data || error) throw new Error(error?.message ?? 'Não foi possível consultar o rascunho.')
+  return data
+}
 
 interface AggRow {
   supervisor?: string | null
@@ -196,9 +207,41 @@ export default function ConsultaDrillDown() {
   const [erro, setErro] = useState<string | null>(null)
   const [filtroPromotor, setFiltroPromotor] = useState('')
   // Meta Diretoria do ciclo publicado e o total já alocado (Σ Meta Final), vindos do banco
-  const [metaDiretoria, setMetaDiretoria] = useState<number | null>(null)
-  const [alocado, setAlocado] = useState<number | null>(null)
-  const saldoEsgotado = metaDiretoria !== null && alocado !== null && alocado >= metaDiretoria
+  const [rascunho, setRascunho] = useState<Rascunho | null>(null)
+  const [alvo, setAlvo] = useState<{ promotor: string; supervisor: string | null; meta: number } | null>(null)
+  const [valorAjuste, setValorAjuste] = useState('')
+  const [motivoAjuste, setMotivoAjuste] = useState('')
+  const [erroAjuste, setErroAjuste] = useState('')
+  const [avisoAjuste, setAvisoAjuste] = useState('')
+  const [salvando, setSalvando] = useState(false)
+  const ajusteDe = (promotor: string, supervisor: string | null) =>
+    Number(rascunho?.grupos.find(g => g.promotor === promotor && g.supervisor === supervisor)?.ajuste ?? 0)
+  const retirar = (rascunho?.saldo ?? 0) <= 0
+  const limite = alvo && rascunho ? retirar ? alvo.meta + ajusteDe(alvo.promotor, alvo.supervisor) : rascunho.saldo : 0
+
+  useEffect(() => {
+    if (!user || !session) { setRascunho(null); return }
+    let ativo = true
+    void consultarAjuste().then(r => { if (ativo) setRascunho(r) }, () => { if (ativo) setRascunho(null) })
+    return () => { ativo = false }
+  }, [user, session])
+
+  async function salvarAjuste(e: React.FormEvent) {
+    e.preventDefault()
+    if (!alvo || !rascunho || salvando) return
+    setSalvando(true); setErroAjuste('')
+    try {
+      const valor = centavos(valorAjuste)
+      if (valor <= 0n || valor > centavos(Math.round(limite * 100) / 100)) throw new Error('Informe um valor positivo dentro do limite indicado.')
+      setRascunho(await consultarAjuste({ p_promotor: alvo.promotor, p_supervisor: alvo.supervisor,
+        p_acao: retirar ? 'retirar' : 'colocar', p_valor: (Number(valor) / 100).toFixed(2),
+        p_motivo: motivoAjuste.trim(), p_saldo_esperado: String(rascunho.saldo) }))
+      setAlvo(null); setAvisoAjuste('Ajuste salvo no rascunho. A meta publicada não mudou.')
+    } catch (erro) {
+      setErroAjuste(erro instanceof Error ? erro.message : 'Não foi possível salvar.')
+      try { setRascunho(await consultarAjuste()) } catch { /* preserva a mensagem de erro */ }
+    } finally { setSalvando(false) }
+  }
 
   useEffect(() => {
     if (!loading && !user && !session) navigate('/', { replace: true })
@@ -227,14 +270,6 @@ export default function ConsultaDrillDown() {
         ])
         if (regR.error) throw regR.error
         if (supR.error) throw supR.error
-        // Meta Diretoria publicada e Σ Meta Final: define se ainda há meta a alocar
-        const ciclo = await supabase
-          .from('ciclo_meta')
-          .select('meta_diretoria')
-          .eq('mes_referencia', '2026-10')
-          .eq('status', 'publicado')
-          .maybeSingle()
-        setMetaDiretoria(ciclo.data ? Number(ciclo.data.meta_diretoria) : null)
         const regs = (regR.data ?? []) as AggRow[]
         const sups = (supR.data ?? []) as AggRow[]
         const t = regs.reduce<{ o: number; g: number; f: number; n: number }>(
@@ -247,7 +282,6 @@ export default function ConsultaDrillDown() {
           { o: 0, g: 0, f: 0, n: 0 },
         )
         setTotais(t)
-        setAlocado(Number(t.f))
         setRegimes(regs)
         setAggs(sups)
         setLinhas([])
@@ -380,6 +414,27 @@ export default function ConsultaDrillDown() {
 
   return (
     <div className="min-h-screen bg-[#FAF6EF] text-[#2C1E12] flex flex-col font-sans">
+      <Dialog open={!!alvo} onOpenChange={aberto => { if (!aberto && !salvando) setAlvo(null) }}>
+        {alvo && rascunho && <DialogContent>
+          <DialogTitle>{retirar ? 'Retirar meta' : 'Colocar meta'} — {nomeResp(alvo.promotor)}</DialogTitle>
+          <DialogDescription>O ajuste fica salvo no rascunho do ciclo. A meta publicada não muda.</DialogDescription>
+          <div className="space-y-1 text-sm">
+            <p>Meta do promotor no rascunho: <strong>{fmtBRL(alvo.meta + ajusteDe(alvo.promotor, alvo.supervisor))}</strong></p>
+            <p>Saldo da empresa a alocar: <strong>{fmtBRL(rascunho.saldo)}</strong></p>
+            <p>Limite para este ajuste: <strong>{fmtBRL(limite)}</strong></p>
+          </div>
+          <form className="space-y-3" onSubmit={salvarAjuste}>
+            <label className="block">Valor (R$)<Input required inputMode="decimal" value={valorAjuste} onChange={e => setValorAjuste(e.target.value)} disabled={salvando} placeholder="Ex.: 1000,00" /></label>
+            <label className="block">Motivo<Input required maxLength={500} value={motivoAjuste} onChange={e => setMotivoAjuste(e.target.value)} disabled={salvando} /></label>
+            {erroAjuste && <p role="alert" className="text-sm text-red-700">{erroAjuste}</p>}
+            <div className="flex justify-end gap-2">
+              <button className="rounded-lg border px-3 py-2" type="button" disabled={salvando} onClick={() => setAlvo(null)}>Cancelar</button>
+              <button className="rounded-lg bg-[#745322] px-3 py-2 text-white disabled:opacity-50" disabled={salvando || limite <= 0 || !motivoAjuste.trim()}>{salvando ? 'Salvando…' : 'Salvar ajuste'}</button>
+            </div>
+          </form>
+        </DialogContent>}
+      </Dialog>
+      {avisoAjuste && <p role="status" className="bg-green-50 p-3 text-center text-green-900">{avisoAjuste}</p>}
       <header className="border-b border-[#E5D9C8] bg-white sticky top-0 z-20 shadow-xs">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -601,25 +656,20 @@ export default function ConsultaDrillDown() {
                               {fmtBRL(r.f)}
                             </TableCell>
                             <TableCell className="text-center">
-                              {codigo && (
-                                <button
-                                  type="button"
+                              {codigo && rascunho && Number(r.f) > 0 && (
+                                <button type="button"
+                                  disabled={retirar && Number(r.f) + ajusteDe(codigo, r.supervisor ?? sup ?? null) <= 0}
                                   onClick={(e) => {
                                     e.stopPropagation()
-                                    navigate(
-                                      `/redistribuir?promotor=${encodeURIComponent(codigo)}&supervisor=${encodeURIComponent(r.supervisor ?? '')}&acao=${saldoEsgotado ? 'retirar' : 'colocar'}`,
-                                    )
+                                    setValorAjuste(''); setMotivoAjuste(''); setErroAjuste(''); setAvisoAjuste('')
+                                    setAlvo({ promotor: codigo, supervisor: r.supervisor ?? sup ?? null, meta: Number(r.f) })
                                   }}
-                                  className="inline-flex items-center gap-1 rounded-md border border-[#D99A2B]/50 px-2 py-1 text-xs text-[#745322] hover:bg-[#FAF6EF]"
-                                  title={
-                                    saldoEsgotado
-                                      ? 'Toda a meta já está alocada: só é possível retirar meta deste promotor'
-                                      : 'Há meta a alocar: é possível colocar meta neste promotor'
-                                  }
-                                >
-                                  <Shuffle className="w-3.5 h-3.5" />
-                                  {saldoEsgotado ? 'Retirar' : 'Colocar'}
+                                  className="inline-flex items-center gap-1 rounded-md border border-[#D99A2B]/50 px-2 py-1 text-xs text-[#745322] hover:bg-[#FAF6EF] disabled:opacity-50">
+                                  <Shuffle className="w-3.5 h-3.5" />{retirar ? 'Retirar' : 'Colocar'}
                                 </button>
+                              )}
+                              {codigo && rascunho && ajusteDe(codigo, r.supervisor ?? sup ?? null) !== 0 && (
+                                <div className="mt-1 text-xs">Rascunho: {fmtBRL(Number(r.f) + ajusteDe(codigo, r.supervisor ?? sup ?? null))}</div>
                               )}
                             </TableCell>
                             <TableCell className="text-center">
@@ -647,6 +697,7 @@ export default function ConsultaDrillDown() {
                             </>
                           )
                         })()}
+                        <TableCell />
                         <TableCell />
                       </TableRow>
                     </TableBody>
