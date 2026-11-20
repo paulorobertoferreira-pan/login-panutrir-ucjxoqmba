@@ -10,6 +10,7 @@ import {
   Package,
   Search,
   X,
+  Shuffle,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { supabase } from '@/lib/supabase/client'
@@ -194,6 +195,10 @@ export default function ConsultaDrillDown() {
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState<string | null>(null)
   const [filtroPromotor, setFiltroPromotor] = useState('')
+  // Meta Diretoria do ciclo publicado e o total já alocado (Σ Meta Final), vindos do banco
+  const [metaDiretoria, setMetaDiretoria] = useState<number | null>(null)
+  const [alocado, setAlocado] = useState<number | null>(null)
+  const saldoEsgotado = metaDiretoria !== null && alocado !== null && alocado >= metaDiretoria
 
   useEffect(() => {
     if (!loading && !user && !session) navigate('/', { replace: true })
@@ -222,6 +227,14 @@ export default function ConsultaDrillDown() {
         ])
         if (regR.error) throw regR.error
         if (supR.error) throw supR.error
+        // Meta Diretoria publicada e Σ Meta Final: define se ainda há meta a alocar
+        const ciclo = await supabase
+          .from('ciclo_meta')
+          .select('meta_diretoria')
+          .eq('mes_referencia', '2026-10')
+          .eq('status', 'publicado')
+          .maybeSingle()
+        setMetaDiretoria(ciclo.data ? Number(ciclo.data.meta_diretoria) : null)
         const regs = (regR.data ?? []) as AggRow[]
         const sups = (supR.data ?? []) as AggRow[]
         const t = regs.reduce<{ o: number; g: number; f: number; n: number }>(
@@ -234,6 +247,7 @@ export default function ConsultaDrillDown() {
           { o: 0, g: 0, f: 0, n: 0 },
         )
         setTotais(t)
+        setAlocado(Number(t.f))
         setRegimes(regs)
         setAggs(sups)
         setLinhas([])
@@ -548,6 +562,7 @@ export default function ConsultaDrillDown() {
                         <TableHead className="text-[#7A6A5A] text-right">Meta Original</TableHead>
                         <TableHead className="text-[#7A6A5A] text-right">GAP</TableHead>
                         <TableHead className="text-[#7A6A5A] text-right">Meta Final</TableHead>
+                        <TableHead className="text-[#7A6A5A] text-center">Redistribuir</TableHead>
                         <TableHead className="text-[#7A6A5A] text-center">Abrir</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -584,6 +599,24 @@ export default function ConsultaDrillDown() {
                             </TableCell>
                             <TableCell className="text-right font-mono text-xs font-semibold">
                               {fmtBRL(r.f)}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {codigo && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    navigate(
+                                      `/redistribuir?promotor=${encodeURIComponent(codigo)}&supervisor=${encodeURIComponent(r.supervisor ?? '')}&acao=${saldoEsgotado ? 'retirar' : 'colocar'}`,
+                                    )
+                                  }}
+                                  className="inline-flex items-center gap-1 rounded-md border border-[#D99A2B]/50 px-2 py-1 text-xs text-[#745322] hover:bg-[#FAF6EF]"
+                                  title={saldoEsgotado ? 'Toda a meta já está alocada: só é possível retirar meta deste promotor' : 'Há meta a alocar: é possível colocar meta neste promotor'}
+                                >
+                                  <Shuffle className="w-3.5 h-3.5" />
+                                  {saldoEsgotado ? 'Retirar' : 'Colocar'}
+                                </button>
+                              )}
                             </TableCell>
                             <TableCell className="text-center">
                               <ChevronRight className="w-4 h-4 text-[#D99A2B] inline" />
