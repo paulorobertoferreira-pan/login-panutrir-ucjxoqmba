@@ -39,6 +39,12 @@ async function consultarAjuste(mes: string, args: Record<string, unknown> = {}) 
   return data
 }
 
+const MES_TAG_PDV = '2026-10'
+type PdvMarcado = {
+  cliente_codigo: string; cliente_nome: string; supervisor_codigo: string | null;
+  promotor_codigo: string | null; tag_pdv: string | null;
+}
+
 interface AggRow {
   supervisor?: string | null
   promotor?: string | null
@@ -208,6 +214,9 @@ export default function ConsultaDrillDown() {
   const [erro, setErro] = useState<string | null>(null)
   const [filtroPromotor, setFiltroPromotor] = useState('')
   const [supervisoresSelecionados, setSupervisoresSelecionados] = useState<string[]>([])
+  const [apenasNovosPdvs, setApenasNovosPdvs] = useState(false)
+  const [pdvsMarcados, setPdvsMarcados] = useState<PdvMarcado[]>([])
+  const [estadoPdvs, setEstadoPdvs] = useState<'carregando' | 'pronto' | 'erro'>('carregando')
   const [mes, setMes] = useState('2026-10')
   const [ciclos, setCiclos] = useState<string[]>([])
   const [estado, setEstado] = useState<EstadoAjuste | null>(null)
@@ -244,6 +253,23 @@ export default function ConsultaDrillDown() {
     }).catch(() => { if (ativo) setEstado(null) })
     return () => { ativo = false }
   }, [mes, user, session])
+
+  useEffect(() => {
+    if (!user || !session || !apenasNovosPdvs || mes !== MES_TAG_PDV) return
+    let ativo = true
+    setEstadoPdvs('carregando')
+    const dia = `${MES_TAG_PDV}-01`
+    void supabase.from('catalog_clientes')
+      .select('cliente_codigo,cliente_nome,supervisor_codigo,promotor_codigo,tag_pdv')
+      .in('tag_pdv', ['novo_na_base', 'lacuna']).lte('vigencia_inicio', dia)
+      .or(`vigencia_fim.is.null,vigencia_fim.gt.${dia}`).order('cliente_codigo')
+      .then(({ data, error }) => {
+        if (!ativo) return
+        setPdvsMarcados(error ? [] : (data ?? []))
+        setEstadoPdvs(error ? 'erro' : 'pronto')
+      })
+    return () => { ativo = false }
+  }, [user, session, mes, apenasNovosPdvs])
 
   function abrirAjuste(a: Alvo) {
     setValorAjuste(''); setMotivoAjuste(''); setErroAjuste(''); setAvisoAjuste('')
@@ -423,8 +449,20 @@ export default function ConsultaDrillDown() {
   }
 
   const filtroNorm = filtroPromotor.trim().toLowerCase()
-  const supervisoresDisponiveis = [...new Set(aggs.flatMap(r => r.supervisor ? [r.supervisor] : []))]
-    .sort((a, b) => nomeResp(a).localeCompare(nomeResp(b), 'pt-BR'))
+  const mostrarPdvs = apenasNovosPdvs && mes === MES_TAG_PDV
+  const supervisoresDisponiveis = [...new Set([
+    ...aggs.flatMap(r => r.supervisor ? [r.supervisor] : []),
+    ...(mostrarPdvs ? pdvsMarcados.flatMap(pdv => pdv.supervisor_codigo ? [pdv.supervisor_codigo] : []) : []),
+    ...supervisoresSelecionados,
+  ])].sort((a, b) => nomeResp(a).localeCompare(nomeResp(b), 'pt-BR'))
+  const pdvsFiltrados = pdvsMarcados.filter(pdv => {
+    if (nivel !== 'empresa' && pdv.supervisor_codigo !== sup) return false
+    if (nivel === 'promotor' && pdv.promotor_codigo !== prom) return false
+    if (supervisoresSelecionados.length && !supervisoresSelecionados.includes(pdv.supervisor_codigo ?? '')) return false
+    if (!filtroNorm) return true
+    const codigo = pdv.promotor_codigo ?? ''
+    return `${nomes[codigo] ?? ''} ${codigo}`.toLowerCase().includes(filtroNorm)
+  })
   const aggsFiltrados = nivel === 'empresa' ? aggs.filter(r => {
     if (supervisoresSelecionados.length && !supervisoresSelecionados.includes(r.supervisor ?? '')) return false
     const promotor = r.promotor ?? ''
@@ -553,7 +591,7 @@ export default function ConsultaDrillDown() {
 
         <label className="block text-sm">Ciclo publicado
           <select className="ml-2 rounded border bg-white p-2" value={mes} disabled={salvando} onChange={e => {
-            setMes(e.target.value); setEstado(null); setAlvo(null); setNivel('empresa'); setSup(null); setProm(null);
+            setMes(e.target.value); setApenasNovosPdvs(false); setEstadoPdvs('carregando'); setEstado(null); setAlvo(null); setNivel('empresa'); setSup(null); setProm(null);
             setAggs([]); setLinhas([]); setRegimes([]); setTotais(null); setSupervisoresSelecionados([]); setAvisoAjuste('')
           }}>
             {(ciclos.length ? ciclos : [mes]).map(c => <option key={c}>{c}</option>)}
@@ -703,13 +741,44 @@ export default function ConsultaDrillDown() {
           </div>
         )}
 
+        {mes === MES_TAG_PDV && (
+          <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium">
+            <input type="checkbox" role="switch" checked={mostrarPdvs}
+              className="h-4 w-4 accent-[#745322]"
+              onChange={e => { setEstadoPdvs('carregando'); setApenasNovosPdvs(e.currentTarget.checked) }} />
+            Apenas novos PDVs
+          </label>
+        )}
+        {mostrarPdvs && (
+          <Card className="border-[#E5D9C8] bg-white">
+            <CardContent className="space-y-3 pt-6">
+              <p className="text-sm text-[#7A6A5A]">PDVs marcados na comparação de outubro com setembro, incluindo lacunas e PDVs sem meta.</p>
+              {estadoPdvs === 'carregando' ? <p role="status">Carregando PDVs…</p>
+                : estadoPdvs === 'erro' ? <p role="alert">Não foi possível consultar as marcações de PDVs.</p>
+                : pdvsFiltrados.length === 0 ? <p>Nenhum PDV novo encontrado com os filtros selecionados.</p>
+                : <><p className="text-sm font-semibold">{pdvsFiltrados.length} PDV(s)</p>
+                  <Table>
+                    <TableHeader><TableRow><TableHead>PDV</TableHead><TableHead>Supervisor</TableHead><TableHead>Promotor</TableHead><TableHead>Marcação</TableHead></TableRow></TableHeader>
+                    <TableBody>{pdvsFiltrados.map(pdv => (
+                      <TableRow key={pdv.cliente_codigo}>
+                        <TableCell>{pdv.cliente_nome} · {pdv.cliente_codigo}</TableCell>
+                        <TableCell>{nomeResp(pdv.supervisor_codigo)}</TableCell>
+                        <TableCell>{nomeResp(pdv.promotor_codigo)}</TableCell>
+                        <TableCell><Badge variant="outline">{pdv.tag_pdv === 'lacuna' ? 'Lacuna' : 'Novo na base'}</Badge></TableCell>
+                      </TableRow>
+                    ))}</TableBody>
+                  </Table></>}
+            </CardContent>
+          </Card>
+        )}
+
         {erro && (
           <div className="rounded-xl border border-[#C44133]/30 bg-[#FDE8E6]/50 p-4 text-sm text-[#C44133]">
             Erro ao carregar: {erro}
           </div>
         )}
 
-        {carregando ? (
+        {!mostrarPdvs && (carregando ? (
           <div className="flex items-center justify-center py-12">
             <div className="w-8 h-8 border-3 border-[#D99A2B] border-t-transparent rounded-full animate-spin" />
           </div>
@@ -918,7 +987,7 @@ export default function ConsultaDrillDown() {
 
             {aberta && <MemoriaPanel linha={aberta} onClose={() => setAberta(null)} />}
           </>
-        )}
+        ))}
 
         <div className="flex items-center justify-between text-xs text-[#7A6A5A]">
           <span>
