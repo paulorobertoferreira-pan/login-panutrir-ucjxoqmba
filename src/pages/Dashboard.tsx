@@ -25,12 +25,19 @@ interface ControleResumo {
   estado: string
 }
 
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+function rotuloCiclo(mes: string) {
+  const [ano, m] = mes.split('-')
+  return `${MESES[Number(m) - 1]}/${ano.slice(2)}`
+}
+
 export default function Dashboard() {
   const navigate = useNavigate()
   const { user, session, loading, signOut } = useAuth()
   const [totais, setTotais] = useState<ResumoCiclo | null>(null)
   const [controles, setControles] = useState<ControleResumo[]>([])
   const [carregando, setCarregando] = useState(true)
+  const [mes, setMes] = useState<string | null>(null)
 
   useEffect(() => {
     if (!loading && !user && !session) {
@@ -41,15 +48,28 @@ export default function Dashboard() {
   useEffect(() => {
     if (user && session) {
       ;(async () => {
+        // O Dashboard mostra o ciclo publicado mais recente, não um mês fixo.
+        const { data: ciclosR, error: ciclosE } = await supabase
+          .from('ciclo_meta')
+          .select('mes_referencia')
+          .eq('status', 'publicado')
+          .order('mes_referencia', { ascending: false })
+          .limit(1)
+        const referencia = ciclosE ? null : ciclosR?.[0]?.mes_referencia
+        if (!referencia) {
+          setCarregando(false)
+          return
+        }
+        setMes(referencia)
         const [regR, ctlR] = await Promise.all([
           supabase
             .from('vw_meta_regime')
             .select('meta_original, gap_linha, meta_final, combinacoes')
-            .eq('referencia_ciclo', '2026-10'),
+            .eq('referencia_ciclo', referencia),
           supabase
             .from('controle_gabarito')
             .select('estado')
-            .eq('referencia_ciclo', '2026-10')
+            .eq('referencia_ciclo', referencia)
             .eq('modo', 'VALIDACAO_REGRA'),
         ])
         if (regR.data) {
@@ -136,11 +156,11 @@ export default function Dashboard() {
         <div className="space-y-1">
           <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#2C1E12] flex items-center gap-2">
             <Target className="w-5 h-5 text-[#D99A2B]" />
-            Ciclo Out/26
+            {mes ? `Ciclo ${rotuloCiclo(mes)}` : 'Sem ciclo publicado'}
           </h2>
           <p className="font-sans text-sm text-[#7A6A5A]">
-            Resumo do ciclo de metas de Outubro/2026 — acesse o painel de controles, a consulta
-            drill-down ou os parâmetros.
+            Resumo do ciclo de metas publicado mais recente — acesse o painel de controles, a
+            consulta drill-down ou os parâmetros.
           </p>
         </div>
 
