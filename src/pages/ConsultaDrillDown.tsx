@@ -26,6 +26,8 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import { BuscaPromotor, type OpcaoPromotor } from '@/components/BuscaPromotor'
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -905,19 +907,19 @@ export default function ConsultaDrillDown() {
         )}
 
         {mes === MES_TAG_PDV && (
-          <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium">
-            <input
-              type="checkbox"
-              role="switch"
+          <div className="flex items-center gap-2">
+            <Switch
+              id="toggle-novos-pdvs"
               checked={mostrarPdvs}
-              className="h-4 w-4 accent-[#745322]"
-              onChange={(e) => {
+              onCheckedChange={(marcado) => {
                 setEstadoPdvs('carregando')
-                setApenasNovosPdvs(e.currentTarget.checked)
+                setApenasNovosPdvs(marcado)
               }}
             />
-            Apenas novos PDVs
-          </label>
+            <Label htmlFor="toggle-novos-pdvs" className="cursor-pointer text-sm font-medium">
+              Mostrar apenas PDVs novos
+            </Label>
+          </div>
         )}
         {mostrarPdvs && (
           <Card className="border-[#E5D9C8] bg-white">
