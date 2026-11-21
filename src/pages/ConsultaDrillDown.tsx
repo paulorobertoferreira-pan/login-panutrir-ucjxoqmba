@@ -26,6 +26,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
+import { BuscaPromotor, type OpcaoPromotor } from '@/components/BuscaPromotor'
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { centavos } from '@/lib/redistribuicao'
@@ -340,6 +341,8 @@ export default function ConsultaDrillDown() {
       if (valor <= 0n) throw new Error('Informe um valor positivo.')
       const outro = contrapartes[Number(contraparte)]
       if (!outro?.promotor) throw new Error('Selecione a contraparte.')
+      if (outro.promotor === alvo.promotor && (outro.supervisor ?? null) === alvo.supervisor)
+        throw new Error('Origem e destino não podem ser o mesmo promotor.')
       const unidade = {
         promotor: alvo.promotor,
         supervisor: alvo.supervisor,
@@ -554,6 +557,20 @@ export default function ConsultaDrillDown() {
         })
       : aggs
 
+  // Promotores que podem ser a contraparte: o próprio promotor do alvo fica fora (origem ≠ destino)
+  const opcoesContraparte: OpcaoPromotor[] = contrapartes.flatMap((r, i) =>
+    r.promotor &&
+    (r.promotor !== alvo?.promotor || (r.supervisor ?? null) !== (alvo?.supervisor ?? null))
+      ? [
+          {
+            valor: String(i),
+            rotulo: `${nomeResp(r.promotor)} · ${nomeResp(r.supervisor)}`,
+            busca: `${nomes[r.promotor] ?? ''} ${r.promotor} ${nomes[r.supervisor ?? ''] ?? ''}`,
+          },
+        ]
+      : [],
+  )
+
   const totAgg = (rows: AggRow[]) => ({
     o: rows.reduce((s, r) => s + Number(r.o ?? 0), 0),
     g: rows.reduce((s, r) => s + Number(r.g ?? 0), 0),
@@ -592,25 +609,13 @@ export default function ConsultaDrillDown() {
                 {acao === 'adicionar'
                   ? 'Retirar de qual promotor?'
                   : 'Transferir para qual promotor?'}
-                <select
-                  className="block w-full rounded border p-2"
-                  required
-                  value={contraparte}
-                  onChange={(e) => setContraparte(e.target.value)}
+                <BuscaPromotor
+                  id="contraparte-promotor"
+                  opcoes={opcoesContraparte}
+                  valor={contraparte}
+                  onChange={setContraparte}
                   disabled={salvando}
-                >
-                  <option value="">Selecione um promotor</option>
-                  {contrapartes.map(
-                    (r, i) =>
-                      r.promotor &&
-                      (r.promotor !== alvo.promotor ||
-                        (r.supervisor ?? null) !== alvo.supervisor) && (
-                        <option key={i} value={i}>
-                          {nomeResp(r.promotor)} · {nomeResp(r.supervisor)}
-                        </option>
-                      ),
-                  )}
-                </select>
+                />
               </label>
               <label className="block">
                 Valor (R$)
