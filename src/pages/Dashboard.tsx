@@ -25,7 +25,20 @@ interface ControleResumo {
   estado: string
 }
 
-const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+const MESES = [
+  'Janeiro',
+  'Fevereiro',
+  'Março',
+  'Abril',
+  'Maio',
+  'Junho',
+  'Julho',
+  'Agosto',
+  'Setembro',
+  'Outubro',
+  'Novembro',
+  'Dezembro',
+]
 function rotuloCiclo(mes: string) {
   const [ano, m] = mes.split('-')
   return `${MESES[Number(m) - 1]}/${ano.slice(2)}`
